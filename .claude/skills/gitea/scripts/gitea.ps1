@@ -63,8 +63,9 @@ function Get-All([string]$Path) {
   $sep = if ($Path.Contains('?')) { '&' } else { '?' }
   $page = 1; $all = @()
   while ($true) {
-    $batch = @(Invoke-Gitea GET "$Path${sep}limit=50&page=$page")
-    if ($batch.Count -eq 0 -or $null -eq $batch[0]) { break }
+    # PS 5.1 ConvertFrom-Json emits a JSON array as ONE object; pipe it to unroll (an empty page then yields nothing).
+    $batch = @(Invoke-Gitea GET "$Path${sep}limit=50&page=$page" | ForEach-Object { $_ })
+    if ($batch.Count -eq 0) { break }
     $all += $batch
     if ($batch.Count -lt 50) { break }
     $page++
@@ -86,7 +87,8 @@ function Resolve-LabelIds([string]$Names, [string]$R = $Repo) {
   return ,$ids
 }
 
-function Out-Json($o) { $o | ConvertTo-Json -Depth 10 }
+# -InputObject keeps arrays as arrays (piping would print nothing for @() and unwrap single items).
+function Out-Json($o) { ConvertTo-Json -InputObject $o -Depth 10 }
 
 function Slim-Issue($i) {
   [pscustomobject]@{
