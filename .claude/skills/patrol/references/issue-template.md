@@ -23,7 +23,7 @@
 {suggestion}
 
 ## 처리 방법
-관제 세션에서 `/resolve-issue {번호}`를 실행하면 에이전트가 브랜치를 만들어 수정하고 PR을 올립니다.
+관제 세션(unit-project-ops)에서 이 이슈 번호로 `/resolve-issue`를 실행하면 에이전트가 브랜치를 만들어 수정하고 PR을 올립니다.
 
 ---
 발견: {reviewer 이름} · 신뢰도 {confidence} · patrol {YYYY-MM-DD}
