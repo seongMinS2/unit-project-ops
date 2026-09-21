@@ -1,0 +1,18 @@
+{
+  "giteaUrl": "http://172.23.239.8:9000",
+  "owner": "smpark",
+  "targetRepo": "unit-project",
+  "opsRepo": "unit-project-ops",
+  "baseBranch": "dev",
+  "workspace": "workspace/unit-project",
+  "agentBranchPrefix": "agent/issue-",
+  "maxNewIssuesPerPatrol": 10,
+  "maxFixAttempts": 2,
+  "firstPatrolCommitDepth": 20,
+  "deepAuditRotation": [
+    "outfax", "infax", "outfaxing", "document", "doctransfer", "member", "attachfile",
+    "addressbook", "chat", "replyfax", "spam", "statistics", "monitor", "notice",
+    "subfolder", "transferhistory", "accesslog", "category", "cid", "code", "port",
+    "project", "basicvalue", "external", "platform", "bootstrap"
+  ]
+}

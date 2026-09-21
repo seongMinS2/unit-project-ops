@@ -1,0 +1,90 @@
+---
+name: resolve-issue
+description: unit-project의 Gitea 이슈를 번호로 지정받아 처리한다. 이슈를 분석하고, 전용 작업 공간에 agent/issue-N 브랜치를 만들어 issue-fixer가 수정하고, build-runner가 테스트하고, fix-verifier가 검증을 통과시킨 뒤 dev 대상 PR을 만들고 이슈에 결과를 남긴다. "#12 처리해", "이슈 12번 고쳐", "resolve 12", "12, 15번 이슈 작업해줘"처럼 특정 이슈의 수정·구현을 요청할 때 반드시 사용한다. merge는 하지 않는다.
+---
+
+# Resolve Issue: 지정 이슈 처리
+
+사람이 이슈 번호를 지정했을 때만 동작합니다. 결과물은 **사람이 리뷰하고 merge할 PR**입니다. 에이전트가 직접 merge하지 않는 이유는, 헥사고날 경계나 업무 규칙처럼 테스트로 다 잡히지 않는 판단은 사람이 마지막에 봐야 하기 때문입니다.
+
+여러 번호를 받으면 한 번에 하나씩 순서대로 처리합니다. 같은 작업 공간을 공유하므로 병렬로 돌리면 브랜치가 섞입니다.
+
+## 1. 착수 전 확인
+
+1. `gitea` 스킬로 `issue-get -Number N`을 실행합니다.
+2. 아래 중 하나라도 해당하면 **착수하지 않고** 이유를 사용자에게 보고합니다.
+   - 이슈가 닫혀 있음
+   - 이미 `agent:in-progress` 또는 `agent:pr-open` 라벨이 붙어 있음 (중복 작업 방지)
+   - 원격에 `agent/issue-N` 브랜치가 이미 있음
+   - 요구사항이 모호해서 두 가지 이상으로 해석됨. 이 경우 해석 후보를 이슈 코멘트로 남기고 `agent:blocked` 라벨을 붙입니다.
+3. `label-add agent:in-progress`를 실행하고 "에이전트가 작업을 시작했습니다." 코멘트를 남깁니다.
+
+## 2. 브랜치 준비
+
+```powershell
+git -C workspace/unit-project fetch origin --prune
+git -C workspace/unit-project switch -C agent/issue-N origin/dev
+```
+
+## 3. 수정 (issue-fixer)
+
+`issue-fixer` 에이전트를 호출합니다. 넘길 내용은 이슈 본문과 코멘트 전체, 작업 공간 경로, 브랜치 이름입니다.
+
+다음 조건에서는 호출 시 `model: "opus"`로 올립니다. 이런 수정은 잘못되면 되돌리기 어렵거나 영향 범위가 넓기 때문입니다.
+- `severity/critical` 또는 `type/security`
+- `type/architecture`
+- 수정이 3개 이상 도메인 패키지에 걸칠 것으로 보이는 경우
+
+issue-fixer는 변경 요약, 수정 파일 목록, 추가한 테스트를 반환합니다. 커밋은 오케스트레이터가 합니다.
+
+## 4. 테스트 (build-runner)
+
+`build-runner`에게 작업 공간에서 테스트를 돌리게 합니다. 1차로 관련 테스트만, 2차로 전체 `test`를 실행합니다. 전체 테스트에는 ArchUnit 경계 테스트가 포함되어 있어 반드시 필요합니다. 실패하면 요약을 issue-fixer에게 돌려보내 다시 수정하게 합니다.
+
+## 5. 검증 (fix-verifier)
+
+`fix-verifier`에게 이슈 원문과 `git diff origin/dev...HEAD`를 넘깁니다. 판정은 `APPROVE` 또는 `REJECT`(사유 목록 포함)로 받습니다.
+- REJECT이면 사유를 issue-fixer에게 넘겨 다시 수정합니다. 4~5단계를 최대 `maxFixAttempts`(2)회 반복합니다.
+- 그래도 통과하지 못하면 8단계(실패 처리)로 갑니다.
+
+## 6. 커밋과 PR
+
+1. 커밋 메시지는 저장소 관례대로 한국어 한 줄 요약을 쓰고, 본문에 `Refs #N`을 넣습니다. `Closes`는 쓰지 않습니다. 이슈는 사람이 merge 후 닫습니다.
+   ```
+   문서 다운로드 API 소유자 검증 추가
+
+   Refs #N
+
+   Co-Authored-By: Claude <noreply@anthropic.com>
+   ```
+2. `git push -u origin agent/issue-N`로 push합니다. dev/main으로의 push는 hook이 차단합니다.
+3. `pr-create`로 dev 대상 PR을 만듭니다. PR 본문은 다음과 같습니다.
+   ```markdown
+   ## 관련 이슈
+   Refs #N
+   ## 변경 내용
+   (issue-fixer 요약)
+   ## 테스트
+   - 실행: `gradlew test` → 통과 (N개)
+   - 추가한 테스트: ...
+   ## 검증
+   fix-verifier: APPROVE (시도 k회차)
+   ## 리뷰어 확인 요청
+   (verifier가 사람 확인이 필요하다고 표시한 지점)
+
+   🤖 Generated with [Claude Code](https://claude.com/claude-code)
+   ```
+
+## 7. 마무리
+
+`label-remove agent:in-progress`, `label-add agent:pr-open`을 실행하고, 이슈에 PR 링크 코멘트를 남긴 뒤 사용자에게 PR URL을 보고합니다.
+
+## 8. 실패 처리
+
+어느 단계에서든 진행할 수 없으면 다음을 수행합니다.
+- 작업 브랜치는 로컬에만 두고 push하지 않습니다.
+- `agent:in-progress` 라벨을 제거하고 `agent:blocked` 라벨을 붙입니다.
+- 이슈 코멘트에 시도한 내용, 실패 지점, 마지막 테스트 또는 검증 결과 요약, 사람이 판단할 질문을 남깁니다.
+- 사용자에게 같은 내용을 짧게 보고합니다.
+
+실패를 성공처럼 보고하지 마세요. 테스트를 건너뛰었거나 일부만 통과했다면 PR 본문과 보고에 그대로 적습니다.

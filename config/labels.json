@@ -1,0 +1,19 @@
+[
+  { "name": "agent:found",       "color": "#6f42c1", "description": "관제 에이전트가 발견한 이슈" },
+  { "name": "agent:in-progress", "color": "#fbca04", "description": "에이전트가 처리 중" },
+  { "name": "agent:pr-open",     "color": "#0e8a16", "description": "에이전트가 PR 생성, 사람 리뷰 대기" },
+  { "name": "agent:blocked",     "color": "#b60205", "description": "에이전트가 자동 처리 실패, 사람 판단 필요" },
+  { "name": "severity/critical", "color": "#b60205", "description": "보안 사고·데이터 손상 가능" },
+  { "name": "severity/high",     "color": "#d93f0b", "description": "기능 오류 가능성 높음" },
+  { "name": "severity/medium",   "color": "#fbca04", "description": "잠재 버그·유지보수 부담" },
+  { "name": "severity/low",      "color": "#c2e0c6", "description": "개선 제안" },
+  { "name": "type/bug",          "color": "#ee0701", "description": "" },
+  { "name": "type/security",     "color": "#5319e7", "description": "" },
+  { "name": "type/architecture", "color": "#1d76db", "description": "헥사고날·도메인 경계" },
+  { "name": "type/refactor",     "color": "#0075ca", "description": "" },
+  { "name": "type/performance",  "color": "#006b75", "description": "" },
+  { "name": "area/backend",      "color": "#bfdadc", "description": "" },
+  { "name": "area/frontend",     "color": "#bfdadc", "description": "" },
+  { "name": "area/db",           "color": "#bfdadc", "description": "" },
+  { "name": "area/infra",        "color": "#bfdadc", "description": "" }
+]

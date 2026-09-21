@@ -1,0 +1,39 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git status*)",
+      "Bash(git log*)",
+      "Bash(git diff*)",
+      "Bash(git show*)",
+      "Bash(git fetch*)",
+      "Bash(git -C workspace/unit-project *)",
+      "PowerShell(git -C workspace/unit-project *)",
+      "PowerShell(powershell -NoProfile -ExecutionPolicy Bypass -File .claude/skills/gitea/scripts/gitea.ps1 *)",
+      "Bash(powershell -NoProfile -ExecutionPolicy Bypass -File .claude/skills/gitea/scripts/gitea.ps1 *)",
+      "PowerShell(.\\gradlew.bat *)",
+      "PowerShell(cd workspace/unit-project*)",
+      "Edit(workspace/unit-project/**)",
+      "Edit(reports/**)",
+      "Edit(state/**)"
+    ],
+    "deny": [
+      "Edit(//c/dev/unit-project/**)",
+      "Read(//c/dev/unit-project/**)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|PowerShell|Edit|Write|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard.ps1\"",
+            "timeout": 15,
+            "statusMessage": "안전 규칙 확인 중"
+          }
+        ]
+      }
+    ]
+  }
+}
