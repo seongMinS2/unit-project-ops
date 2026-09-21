@@ -26,7 +26,24 @@ if ($tool -in @('Edit', 'Write', 'NotebookEdit')) {
 if ($tool -notin @('Bash', 'PowerShell')) { exit 0 }
 $cmd = [string]$in.tool_input.command
 $cwd = [string]$in.cwd
-$inWorkspace = ($cmd -match '(?i)workspace[\\/]+unit-project') -or ($cwd -match '(?i)workspace[\\/]+unit-project')
+# Which repo does the git command act on? `git -C <dir>` wins, then the last `cd <dir>` in the
+# command, then the session cwd. (Checking cwd alone blocked a legit `cd ops && git push origin main`.)
+function Resolve-Dir([string]$base, [string]$p) {
+  $p = $p -replace '^(?i)/(mnt/)?([a-z])/', '$2:/'          # /c/dev -> c:/dev
+  try {
+    if (-not [IO.Path]::IsPathRooted($p) -or $p -match '^[\\/]') { $p = Join-Path $base $p }
+    return [IO.Path]::GetFullPath($p)
+  } catch { return $p }
+}
+$target = $cwd
+foreach ($m in [regex]::Matches($cmd, '(?i)(?:^|[;&|]\s*|\s)(?:cd|Set-Location)\s+("?)([^";&|\s]+)\1')) {
+  $target = Resolve-Dir $target $m.Groups[2].Value
+}
+if ($cmd -match '(?i)\bgit\s+-C\s+("?)([^";&|\s]+)\1') { $target = Resolve-Dir $target $Matches[2] }
+$inWorkspace = $target -match '(?i)workspace[\\/]+unit-project'
+if ($target -match '(?i)^c:[\\/]+dev[\\/]+unit-project([\\/]|$)') {
+  Block '사용자 작업 폴더 C:\dev\unit-project 로 이동하거나 그 안에서 명령을 실행할 수 없습니다.'
+}
 
 if ($cmd -match $userCheckout) {
   Block '사용자 작업 폴더 C:\dev\unit-project 를 대상으로 하는 명령은 허용되지 않습니다.'
