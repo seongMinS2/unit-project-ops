@@ -12,9 +12,13 @@ function Git-Checked { git @args; if ($LASTEXITCODE) { throw "git $args 실패 (
 
 # Use GITEA_TOKEN for git over HTTP instead of whatever Windows Credential Manager has cached
 # (a cached account without write access caused 403 on push).
-$helper = '!sh "' + ((Join-Path $root 'scripts/git-credential-gitea.sh') -replace '\\', '/') + '"'
+# (PS 5.1 strips embedded quotes from native args, so the path must not contain spaces.)
+$helper = '!sh ' + ((Join-Path $root 'scripts/git-credential-gitea.sh') -replace '\\', '/')
 function Set-TokenHelper([string]$repoDir) {
-  git -C $repoDir config --local --replace-all credential.helper ''
+  # An empty entry resets the global helper list (Credential Manager). PS 5.1 drops a bare ''
+  # argument, so pass '""', which reaches git as an empty string.
+  git -C $repoDir config --local --unset-all credential.helper 2>$null
+  git -C $repoDir config --local --add credential.helper '""'
   git -C $repoDir config --local --add credential.helper $helper
 }
 Set-TokenHelper $root
