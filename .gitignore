@@ -1,3 +1,4 @@
 workspace/
 .claude/settings.local.json
 *.tmp
+logs/
