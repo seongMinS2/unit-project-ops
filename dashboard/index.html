@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent HQ</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <div class="logo">AGENT HQ</div>
+    <div class="sub">unit-project-ops · <span id="repo">smpark/unit-project</span></div>
+  </div>
+  <div class="kpis" id="kpis"></div>
+  <div class="clock"><span id="conn" class="conn">연결 중</span><span id="clock"></span></div>
+</header>
+
+<div id="replaybar" class="replaybar" hidden></div>
+
+<main class="grid">
+  <aside class="col left">
+    <section class="panel">
+      <h2>세션 <span class="en">SESSIONS</span></h2>
+      <div id="runs" class="runs"></div>
+    </section>
+    <section class="panel">
+      <h2>레인 <span class="en">LANES</span></h2>
+      <div id="lanes" class="lanes"></div>
+    </section>
+  </aside>
+
+  <section class="col center">
+    <section class="panel">
+      <h2><span id="orgTitle">조직 현황</span> <span class="en">ORGANIZATION COMMAND</span></h2>
+      <div id="org" class="org"></div>
+    </section>
+    <section class="panel">
+      <h2>타임라인 <span class="en">TIMELINE</span>
+        <span class="legend">
+          <span><i class="sw" style="background:var(--opus)"></i>Opus</span>
+          <span><i class="sw" style="background:var(--sonnet)"></i>Sonnet</span>
+          <span><i class="sw" style="background:var(--haiku)"></i>Haiku</span>
+          <span><i class="tk"></i>도구 호출</span>
+          <span><i class="blk">◆</i>가드 차단</span>
+        </span>
+      </h2>
+      <div id="timeline" class="timeline"></div>
+    </section>
+  </section>
+
+  <aside class="col right">
+    <section class="panel">
+      <h2>이슈 <span class="en">GITEA</span> <a id="giteaLink" class="ext" target="_blank" rel="noopener">열기 ↗</a></h2>
+      <div id="issues"></div>
+    </section>
+    <section class="panel grow">
+      <h2>활동 <span class="en">LIVE FEED</span></h2>
+      <div id="feed" class="feed"></div>
+    </section>
+  </aside>
+</main>
+<div id="tip" class="tip" hidden></div>
+<script src="app.js"></script>
+</body>
+</html>
