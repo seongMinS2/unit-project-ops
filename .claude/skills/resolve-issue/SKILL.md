@@ -26,9 +26,11 @@ description: unit-project의 Gitea 이슈를 번호로 지정받아 처리한다
 ```powershell
 git -C workspace/unit-project fetch origin --prune
 git -C workspace/unit-project worktree prune
-git -C workspace/unit-project worktree add -B agent/issue-N workspace/wt/issue-N origin/dev
+git -C workspace/unit-project worktree add -B agent/issue-N C:/dev/unit-project-ops/workspace/wt/issue-N origin/dev
 ```
-`$WT` 폴더가 이미 있으면(이전 시도가 중단된 경우) 로컬 커밋이 없는지 확인한 뒤 `git -C workspace/unit-project worktree remove --force workspace/wt/issue-N`로 지우고 다시 만듭니다. fetch가 다른 세션과 겹쳐 lock 오류가 나면 몇 초 뒤 다시 시도하세요.
+worktree 경로는 **반드시 위의 절대 경로**를 씁니다. 상대 경로를 쓰면 `-C` 폴더 기준으로 해석되어 기본 클론 안에 worktree가 생깁니다. `$WT` = `C:/dev/unit-project-ops/workspace/wt/issue-N`입니다.
+
+`$WT` 폴더가 이미 있으면(이전 시도가 중단된 경우) 로컬 커밋이 없는지 확인한 뒤 `git -C workspace/unit-project worktree remove --force <$WT>`로 지우고 다시 만듭니다. fetch가 다른 세션과 겹쳐 lock 오류가 나면 몇 초 뒤 다시 시도하세요.
 
 이후 모든 git 명령은 `git -C $WT ...`로, 모든 파일 경로는 `$WT` 기준으로 씁니다. 서브에이전트에게도 `$WT` 절대 경로를 작업 디렉터리로 넘깁니다.
 
@@ -85,7 +87,7 @@ issue-fixer는 변경 요약, 수정 파일 목록, 추가한 테스트를 반�
 
 `label-remove agent:in-progress`, `label-add agent:pr-open`을 실행하고, 이슈에 PR 링크 코멘트를 남긴 뒤 사용자에게 PR URL을 보고합니다.
 
-push가 끝났으면 `git -C workspace/unit-project worktree remove workspace/wt/issue-N`로 worktree를 정리합니다. 브랜치는 원격에 남아 있으니 REJECT 피드백이 오면 다시 만들 수 있습니다.
+push가 끝났으면 `git -C workspace/unit-project worktree remove <$WT>`로 worktree를 정리합니다. 브랜치는 원격에 남아 있으니 REJECT 피드백이 오면 다시 만들 수 있습니다.
 
 ## 8. 실패 처리
 

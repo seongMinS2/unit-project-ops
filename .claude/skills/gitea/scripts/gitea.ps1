@@ -73,7 +73,12 @@ function Get-All([string]$Path) {
   return $all
 }
 
-function Read-Body { if (-not $BodyFile) { throw '-BodyFile 가 필요합니다.' }; Get-Content -Raw -Encoding UTF8 $BodyFile }
+# Must be a plain .NET string: Get-Content attaches PSPath/PSProvider/PSDrive note properties, and
+# ConvertTo-Json -Depth 10 then walks those provider objects for minutes (looked like a hung API call).
+function Read-Body {
+  if (-not $BodyFile) { throw '-BodyFile 가 필요합니다.' }
+  [IO.File]::ReadAllText((Resolve-Path $BodyFile).ProviderPath, [Text.Encoding]::UTF8)
+}
 
 function Resolve-LabelIds([string]$Names, [string]$R = $Repo) {
   if (-not $Names) { return @() }
