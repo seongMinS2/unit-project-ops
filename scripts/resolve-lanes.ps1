@@ -13,15 +13,18 @@ $root = Split-Path $PSScriptRoot -Parent
 $Lanes = @($LaneSpec -split ';' | ForEach-Object { $_.Trim() } | Where-Object { $_ })
 if ($Lanes.Count -gt $MaxLanes) { throw "레인이 $($Lanes.Count)개입니다. 최대 $MaxLanes 개까지 허용됩니다 (-MaxLanes 로 조정)." }
 
+# Unique log names per run: a previous launcher that is still alive keeps its lane logs open,
+# and a new lane writing to the same name would die on the locked file.
+$stamp = Get-Date -Format 'MMdd-HHmm'
 $jobs = @()
 $i = 0
 foreach ($lane in $Lanes) {
   $i++
   $nums = @($lane -split '[,\s]+' | Where-Object { $_ } | ForEach-Object { [int]$_ })
-  $jobs += Start-Job -Name "lane$i" -ArgumentList $root, ($nums -join ','), $i -ScriptBlock {
-    param($root, $spec, $i)
+  $jobs += Start-Job -Name "lane$i-$stamp" -ArgumentList $root, ($nums -join ','), "lane$i-$stamp" -ScriptBlock {
+    param($root, $spec, $name)
     Set-Location $root
-    & powershell -NoProfile -ExecutionPolicy Bypass -File scripts\resolve-queue.ps1 -Numbers $spec *> "logs\lane$i.log"
+    & powershell -NoProfile -ExecutionPolicy Bypass -File scripts\resolve-queue.ps1 -Numbers $spec *> "logs\$name.log"
   }
   Write-Host "lane$i 시작: #$($nums -join ' → #')"
   Start-Sleep -Seconds 20   # stagger so the lanes don't all fetch/create worktrees at the same instant
