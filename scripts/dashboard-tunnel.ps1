@@ -3,7 +3,8 @@
 #
 #   scripts\dashboard-tunnel.ps1 -User <ssh-user>
 #
-# Linux side: 127.0.0.1:18787 (tunnel end) -> nginx listens on :8787 and proxies to it.
+# Linux side: 127.0.0.1:18787 (tunnel end) -> Apache httpd listens on :8788 and proxies to it
+# (/etc/httpd/conf.d/agent-hq.conf). View at http://172.23.239.8:8788/
 # Starts dashboard\server.ps1 if it is not running, then keeps the tunnel up (reconnects on drop).
 param(
   [Parameter(Mandatory = $true)][string]$User,
