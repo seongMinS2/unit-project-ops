@@ -16,7 +16,8 @@
 | 이슈 관리 | `issue-clerk` | Haiku | patrol: 이슈 등록 단계 |
 | 테스트 실행 | `build-runner` | Haiku | resolve-issue: 테스트 단계 |
 | 이슈 해결 | `issue-fixer` | Sonnet (보안·critical·아키텍처는 Opus로 상향) | resolve-issue: 수정 단계 |
-| 수정 검증 | `fix-verifier` | Opus | resolve-issue: PR 생성 전 |
+| 수정 검증 | `fix-verifier` | Opus | resolve-issue: PR 생성 전 / sync-prs: 충돌 해결 후 |
+| 충돌 해결 | `conflict-resolver` | Opus | sync-prs: dev와 충돌한 에이전트 PR |
 
 코드를 쓰거나 판정하는 에이전트(`issue-fixer`, `fix-verifier`, `refactor-scout`)에는 **Karpathy Guidelines** 플러그인 스킬(`andrej-karpathy-skills:karpathy-guidelines`)을 미리 로드합니다. 핵심은 다음과 같습니다: 가정을 명시한다, 최소한의 코드로 해결한다, 필요한 곳만 수정한다, 검증 가능한 목표를 세운다. 플러그인은 `.claude/settings.json`에서 활성화합니다.
 
@@ -25,6 +26,7 @@
 ## 워크플로 (스킬)
 - `/patrol`: 정기 순찰. 변경분 리뷰 → 선별 → 이슈 등록 → 리포트 (`.claude/skills/patrol`)
 - `/resolve-issue <번호>`: 지정 이슈 처리. 브랜치 → 수정 → 테스트 → 검증 → PR (`.claude/skills/resolve-issue`)
+- `/sync-prs [PR번호]`: dev와 충돌한 에이전트 PR 해결. dev merge → 충돌 해결 → 테스트 → 검증 → push (`.claude/skills/sync-prs`)
 - `gitea`: 모든 Gitea API 호출 (`.claude/skills/gitea`)
 
 사용자가 "12번 처리해", "#12 고쳐"처럼 말하면 resolve-issue를 실행합니다. "리뷰 돌려", "순찰"이라고 하면 patrol을 실행합니다.

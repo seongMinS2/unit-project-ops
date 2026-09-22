@@ -63,7 +63,22 @@ if ($cmd -match '(?i)\bgit\b[^;|&\n]*\bpush\b[^;|&\n]*') {
     Block 'push --all/--mirror 는 허용되지 않습니다.'
   }
 }
-if ($inWorkspace -and $cmd -match '(?i)\bgit\b[^;|&\n]*\bmerge\b' -and $cmd -notmatch '(?i)merge-base') {
-  Block '작업 공간에서 git merge 는 허용되지 않습니다. 브랜치는 origin/dev 에서 새로 만드세요.'
+# The only merge allowed in the workspace: bringing origin/dev INTO an agent/* branch inside an issue
+# worktree (how sync-prs resolves PR conflicts without a force push), plus --abort/--continue.
+$mm = [regex]::Match($cmd, '(?i)\bgit\b[^;|&\n]*\bmerge\b(?!-)([^;|&\n]*)')
+if ($inWorkspace -and $mm.Success) {
+  $margs = $mm.Groups[1].Value
+  $stripped = $margs -replace '(?i)\s--(no-ff|no-edit|no-commit)\b', ''
+  $allowedForm = ($margs -match '(?i)^\s*--(abort|continue)\s*$') -or ($stripped -match '(?i)^\s*origin/dev\s*$')
+  if (-not $allowedForm) {
+    Block '작업 공간에서 허용되는 merge 는 "git merge --no-edit origin/dev" (에이전트 브랜치로 dev 를 가져오기) 와 --abort/--continue 뿐입니다.'
+  }
+  if ($target -notmatch '(?i)workspace[\\/]+wt[\\/]') {
+    Block 'merge 는 이슈 전용 worktree(workspace/wt/...) 안에서만 할 수 있습니다. 기본 클론은 patrol 전용입니다.'
+  }
+  $branch = try { (& git -C $target rev-parse --abbrev-ref HEAD 2>$null) } catch { '' }
+  if ($branch -notmatch '^agent/') {
+    Block "merge 는 agent/* 브랜치에서만 할 수 있습니다 (현재: $branch)."
+  }
 }
 exit 0

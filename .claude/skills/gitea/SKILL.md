@@ -29,7 +29,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .claude/skills/gitea/scripts
 | `issue-comment -Number N -BodyFile f.md` | 코멘트 작성 |
 | `label-add` / `label-remove -Number N -Labels a,b` | 라벨 추가·제거 |
 | `pr-create -Head 브랜치 -Title T -BodyFile f.md [-Base dev]` | PR 생성 |
-| `pr-list [-State open]` | PR 목록 |
+| `pr-list [-State open]` | PR 목록 (`mergeable` 포함) |
+| `pr-get -Number N` | PR 상세: merge 가능 여부, head/base 브랜치, 본문. PR 코멘트는 `issue-comment -Number <PR번호>`로 답니다 (Gitea에서 PR은 이슈 번호를 공유) |
 
 ## 규칙
 

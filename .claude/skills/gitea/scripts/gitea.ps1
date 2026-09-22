@@ -16,6 +16,7 @@
     gitea.ps1 label-remove  -Number 12 -Labels "agent:in-progress"
     gitea.ps1 pr-create     -Head agent/issue-12 -Title "..." -BodyFile pr.md [-Base dev]
     gitea.ps1 pr-list       [-State open]
+    gitea.ps1 pr-get        -Number 28          (mergeable, head/base, body)
 #>
 param(
   [Parameter(Position = 0, Mandatory = $true)][string]$Command,
@@ -174,8 +175,13 @@ switch ($Command) {
   }
   'pr-list' {
     Out-Json @(Get-All "/repos/$owner/$Repo/pulls?state=$State" | ForEach-Object {
-      @{ number = $_.number; title = $_.title; head = $_.head.ref; base = $_.base.ref; url = $_.html_url; merged = $_.merged }
+      @{ number = $_.number; title = $_.title; head = $_.head.ref; base = $_.base.ref; url = $_.html_url; merged = $_.merged; mergeable = $_.mergeable }
     })
+  }
+  'pr-get' {
+    $p = Invoke-Gitea GET "/repos/$owner/$Repo/pulls/$Number"
+    Out-Json @{ number = $p.number; title = $p.title; state = $p.state; merged = $p.merged; mergeable = $p.mergeable
+      head = $p.head.ref; headSha = $p.head.sha; base = $p.base.ref; mergeBase = $p.merge_base; url = $p.html_url; body = $p.body }
   }
   default { throw "알 수 없는 명령: $Command" }
 }
