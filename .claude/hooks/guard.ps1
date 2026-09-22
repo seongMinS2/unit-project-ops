@@ -40,7 +40,7 @@ foreach ($m in [regex]::Matches($cmd, '(?i)(?:^|[;&|]\s*|\s)(?:cd|Set-Location)\
   $target = Resolve-Dir $target $m.Groups[2].Value
 }
 if ($cmd -match '(?i)\bgit\s+-C\s+("?)([^";&|\s]+)\1') { $target = Resolve-Dir $target $Matches[2] }
-$inWorkspace = $target -match '(?i)workspace[\\/]+unit-project'
+$inWorkspace = $target -match '(?i)workspace[\\/]+(unit-project|wt)([\\/]|$)'
 if ($target -match '(?i)^c:[\\/]+dev[\\/]+unit-project([\\/]|$)') {
   Block '사용자 작업 폴더 C:\dev\unit-project 로 이동하거나 그 안에서 명령을 실행할 수 없습니다.'
 }
