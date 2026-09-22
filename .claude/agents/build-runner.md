@@ -14,6 +14,7 @@ cd <넘겨받은 worktree 경로>
 .\gradlew.bat test --tests "<요청받은 테스트 패턴>" --console=plain   # 1차: 관련 테스트
 .\gradlew.bat test --console=plain                                    # 2차: 전체 (ArchUnit 포함)
 ```
+- **JDK**: 이 PC에는 시스템 `JAVA_HOME`이 없습니다. 먼저 `$env:JAVA_HOME = 'C:\dev\ms-21.0.12.1'`을 설정하세요(bash에서는 `JAVA_HOME=/c/dev/ms-21.0.12.1`). 설정하지 않으면 `JAVA_HOME is not set` 오류로 즉시 실패합니다.
 - 인터넷 없이 빌드해야 하는 환경이면 `docs/operations/offline-build.md`를 참고해 `--offline`을 붙입니다. 의존성 해석 실패가 나면 먼저 `--offline`으로 재시도합니다.
 - 전체 테스트는 오래 걸릴 수 있으니 timeout을 넉넉히(10분) 잡습니다.
 
