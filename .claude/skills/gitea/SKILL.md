@@ -30,11 +30,12 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .claude/skills/gitea/scripts
 | `label-add` / `label-remove -Number N -Labels a,b` | 라벨 추가·제거 |
 | `pr-create -Head 브랜치 -Title T -BodyFile f.md [-Base dev]` | PR 생성 |
 | `pr-list [-State open]` | PR 목록 (`mergeable` 포함) |
+| `close-merged [-DryRun]` | `agent/issue-N` PR이 merge된 열린 이슈 N을 코멘트, 라벨 정리와 함께 닫음. 에이전트가 이슈를 닫는 유일한 경로 |
 | `pr-get -Number N` | PR 상세: merge 가능 여부, head/base 브랜치, 본문. PR 코멘트는 `issue-comment -Number <PR번호>`로 답니다 (Gitea에서 PR은 이슈 번호를 공유) |
 
 ## 규칙
 
 - **본문은 항상 파일로 전달합니다.** 스크래치 디렉터리에 `.md` 파일을 UTF-8로 쓴 뒤 `-BodyFile`로 넘기세요. 명령줄 인자로 한글 여러 줄을 넘기면 인코딩과 따옴표가 깨지기 쉽습니다.
-- **PR merge, 이슈 close, 삭제 명령은 일부러 만들지 않았습니다.** 이 조직에서는 병합과 종료를 사람이 판단하기 때문입니다. 필요해 보이면 사용자에게 요청하세요.
+- **PR merge, 임의의 이슈 close, 삭제 명령은 일부러 만들지 않았습니다.** 병합은 사람이 판단합니다. 이슈 종료는 사람이 PR을 merge한 경우에만 `close-merged`로 합니다. 필요해 보이면 사용자에게 요청하세요.
 - 에이전트가 만든 이슈에는 항상 `agent:found` 라벨과 본문 끝의 `<!-- fp:... -->` 지문을 붙입니다. 이 둘이 있어야 `issue-find-fp`가 중복을 찾을 수 있습니다.
 - `GITEA_TOKEN`이 없다는 오류가 나면 작업을 멈추고 사용자에게 토큰 등록을 안내하세요. 토큰을 대신 입력하거나 파일에 저장하지 마세요.

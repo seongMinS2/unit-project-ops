@@ -34,7 +34,7 @@
 ## 절대 규칙
 이 규칙들은 `.claude/hooks/guard.ps1`이 강제합니다. 우회를 시도하지 마세요.
 1. **unit-project의 `dev`/`main`에 직접 push하지 않습니다.** 모든 변경은 `agent/issue-N` 브랜치와 PR로만 올립니다.
-2. **PR을 merge하거나 이슈를 close하지 않습니다.** 사람이 합니다.
+2. **PR을 merge하지 않습니다.** merge는 사람이 합니다. 이슈 close는 **사람이 그 이슈의 에이전트 PR을 merge한 경우에만** `close-merged`로 합니다.
 3. **force push를 하지 않습니다.**
 4. **사용자 작업 폴더 `C:\dev\unit-project`를 건드리지 않습니다.** 사용자가 아직 push하지 않은 작업이 있을 수 있습니다. 에이전트는 전용 클론 `workspace/unit-project`만 씁니다.
 5. **토큰은 `GITEA_TOKEN` 환경변수에서만 읽습니다.** 파일, 커밋, 로그, 이슈 본문에 토큰을 쓰지 않습니다.

@@ -9,6 +9,10 @@ description: 에이전트가 만든 unit-project PR(agent/* 브랜치) 중 dev�
 
 인자로 PR 번호를 받으면 그 PR만, 없으면 열린 모든 에이전트 PR을 대상으로 합니다.
 
+## 0. merge된 PR의 이슈 정리 (항상 먼저)
+
+`gitea` 스킬의 `close-merged`를 실행합니다. `agent/issue-N` PR이 사람에 의해 merge되었는데 이슈 N이 아직 열려 있으면, 코멘트를 남기고 `agent:pr-open` 라벨을 뗀 뒤 이슈를 닫습니다. merge 자체가 사람의 승인이므로, 에이전트가 이슈를 닫는 경우는 **이것뿐**입니다. 결과(닫은 이슈 목록)를 보고에 포함합니다.
+
 ## 1. 대상 찾기
 
 `gitea` 스킬로 `pr-list -State open`을 실행하고, `head`가 `agent/`로 시작하고 `mergeable`이 false인 PR만 고릅니다. 없으면 "충돌 PR 없음"을 보고하고 끝냅니다.

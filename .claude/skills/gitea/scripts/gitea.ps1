@@ -17,6 +17,7 @@
     gitea.ps1 pr-create     -Head agent/issue-12 -Title "..." -BodyFile pr.md [-Base dev]
     gitea.ps1 pr-list       [-State open]
     gitea.ps1 pr-get        -Number 28          (mergeable, head/base, body)
+    gitea.ps1 close-merged  [-DryRun]           (close issues whose agent/issue-N PR was merged)
 #>
 param(
   [Parameter(Position = 0, Mandatory = $true)][string]$Command,
@@ -29,7 +30,8 @@ param(
   [string]$Fingerprint,
   [string]$Head,
   [string]$Base,
-  [string]$Description = ''
+  [string]$Description = '',
+  [switch]$DryRun
 )
 $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = [Text.Encoding]::UTF8
@@ -177,6 +179,28 @@ switch ($Command) {
     Out-Json @(Get-All "/repos/$owner/$Repo/pulls?state=$State" | ForEach-Object {
       @{ number = $_.number; title = $_.title; head = $_.head.ref; base = $_.base.ref; url = $_.html_url; merged = $_.merged; mergeable = $_.mergeable }
     })
+  }
+  'close-merged' {
+    # Close issues whose agent PR (head agent/issue-N) has been merged by a human.
+    # This is the ONLY way agents close issues: the merge itself is the human approval.
+    $merged = @(Get-All "/repos/$owner/$Repo/pulls?state=closed" | Where-Object { $_.merged -and $_.head.ref -match '^agent/issue-(\d+)$' })
+    $done = @()
+    foreach ($p in $merged) {
+      $n = [int]([regex]::Match($p.head.ref, '^agent/issue-(\d+)$').Groups[1].Value)
+      $i = Invoke-Gitea GET "/repos/$owner/$Repo/issues/$n"
+      if ($i.state -ne 'open') { continue }
+      $entry = [pscustomobject]@{ issue = $n; pr = $p.number; mergedAt = $p.merged_at; title = $i.title }
+      if (-not $DryRun) {
+        $msg = "PR #$($p.number) 이 $($p.merged_at) 에 merge 되어 자동으로 닫습니다. 문제가 남아 있으면 다시 열어 주세요."
+        Invoke-Gitea POST "/repos/$owner/$Repo/issues/$n/comments" @{ body = $msg } | Out-Null
+        foreach ($l in @($i.labels | Where-Object { $_.name -eq 'agent:pr-open' })) {
+          try { Invoke-Gitea DELETE "/repos/$owner/$Repo/issues/$n/labels/$($l.id)" | Out-Null } catch { }
+        }
+        Invoke-Gitea PATCH "/repos/$owner/$Repo/issues/$n" @{ state = 'closed' } | Out-Null
+      }
+      $done += $entry
+    }
+    Out-Json @{ dryRun = [bool]$DryRun; closed = $done }
   }
   'pr-get' {
     $p = Invoke-Gitea GET "/repos/$owner/$Repo/pulls/$Number"
