@@ -18,6 +18,8 @@
 | 이슈 해결 | `issue-fixer` | Sonnet (보안·critical·아키텍처는 Opus로 상향) | resolve-issue: 수정 단계 |
 | 수정 검증 | `fix-verifier` | Opus | resolve-issue: PR 생성 전 |
 
+코드를 쓰거나 판정하는 에이전트(`issue-fixer`, `fix-verifier`, `refactor-scout`)에는 **Karpathy Guidelines** 플러그인 스킬(`andrej-karpathy-skills:karpathy-guidelines`)을 미리 로드합니다. 핵심은 다음과 같습니다: 가정을 명시한다, 최소한의 코드로 해결한다, 필요한 곳만 수정한다, 검증 가능한 목표를 세운다. 플러그인은 `.claude/settings.json`에서 활성화합니다.
+
 모델 배정 원칙: **판단이 틀리면 비용이 큰 곳에는 Opus**(보안, 아키텍처, 최종 검증), **양이 많은 일반 리뷰와 구현에는 Sonnet**, **정형화된 반복 작업에는 Haiku**(API 호출, 테스트 실행과 요약)를 씁니다.
 
 ## 워크플로 (스킬)
