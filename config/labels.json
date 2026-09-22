@@ -1,4 +1,5 @@
 [
+  { "name": "agent:todo",        "color": "#1d76db", "description": "에이전트에게 처리를 맡김 (평일 예약 실행 때 자동 처리)" },
   { "name": "agent:found",       "color": "#6f42c1", "description": "관제 에이전트가 발견한 이슈" },
   { "name": "agent:in-progress", "color": "#fbca04", "description": "에이전트가 처리 중" },
   { "name": "agent:pr-open",     "color": "#0e8a16", "description": "에이전트가 PR 생성, 사람 리뷰 대기" },

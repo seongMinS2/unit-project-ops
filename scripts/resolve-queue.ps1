@@ -1,4 +1,4 @@
-# Resolve issues in order within one lane (other lanes may run in parallel; each issue has its own worktree).
+﻿# Resolve issues in order within one lane (other lanes may run in parallel; each issue has its own worktree).
 # After each run, the issue's labels decide what happens next:
 #   agent:pr-open  -> next issue
 #   agent:blocked  -> issue-specific problem, recorded, next issue
@@ -63,7 +63,14 @@ foreach ($n in $list) {
   $mins = [math]::Round(((Get-Date) - $start).TotalMinutes, 1)
   $summary += [pscustomobject]@{ issue = $n; outcome = $outcome; attempts = $attempt; exit = $exit; minutes = $mins }
   Write-Host "=== #$n result: $outcome (attempts $attempt, exit $exit, $mins min)"
-  if ($outcome -eq 'broken') { Write-Host "=== lane stopped at #${n}: $($apiErr -replace '\s+',' ') -- see logs\resolve-$n.*"; break }
+  if ($outcome -eq 'broken') {
+    # The run itself failed (not an agent decision like `blocked`): hand the issue back to the
+    # agent:todo queue so the next scheduled run retries it, and stop this lane.
+    Reset-Attempt $n
+    Gitea label-add -Number $n -Labels 'agent:todo' | Out-Null
+    Write-Host "=== lane stopped at #${n} (re-queued as agent:todo): $($apiErr -replace '\s+',' ') -- see logs\resolve-$n.*"
+    break
+  }
 }
 $summary | ConvertTo-Json | Set-Content -Encoding UTF8 "logs\resolve-queue-$($list -join '-').json"
 $summary | Format-Table -AutoSize | Out-String | Write-Host
