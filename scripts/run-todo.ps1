@@ -17,12 +17,10 @@ $stamp = Get-Date -Format 'MMdd-HHmm'
 
 # One todo run at a time. Lanes can take hours, and the 30-minute watcher starts this script too;
 # a second run would create the same worktrees and clash with the first (that happened once on PR #37).
+. "$PSScriptRoot\locks.ps1"
 $lock = 'logs\run-todo.lock'
-if (Test-Path $lock) {
-  $lockPid = [int](Get-Content $lock -ErrorAction SilentlyContinue)
-  if ($lockPid -and (Get-Process -Id $lockPid -ErrorAction SilentlyContinue)) { Write-Host "run-todo already running (PID $lockPid)"; exit 0 }
-}
-Set-Content $lock $PID
+if (Test-LockHeld $lock) { Write-Host 'run-todo already running'; exit 0 }
+Set-Lock $lock
 try {
 
 # Cheap pre-check so a day with nothing to do costs no model call.
@@ -49,4 +47,4 @@ foreach ($n in ($lanes | ForEach-Object { $_ })) {
 }
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts\resolve-lanes.ps1 -LaneSpec $spec -MaxLanes 3
 
-} finally { Remove-Item $lock -ErrorAction SilentlyContinue }
+} finally { Clear-Lock $lock }

@@ -18,6 +18,9 @@ $root = Split-Path $PSScriptRoot -Parent
 Set-Location $root
 New-Item -ItemType Directory -Force logs | Out-Null
 if (-not $env:GITEA_TOKEN) { $env:GITEA_TOKEN = [Environment]::GetEnvironmentVariable('GITEA_TOKEN', 'User') }
+# Wait for the session's own background work (a full gradle run easily passes the 600s default) instead
+# of killing the session — that truncation is what left #41 half-done and its lane stuck.
+$env:CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS = '0'
 $gitea = '.claude/skills/gitea/scripts/gitea.ps1'
 function Gitea { powershell -NoProfile -ExecutionPolicy Bypass -File $gitea @args | Out-String }
 
@@ -46,8 +49,12 @@ foreach ($n in $list) {
   while ($true) {
     $attempt++
     Write-Host "=== #$n start $($start.ToString('HH:mm')) (attempt $attempt)"
+    # 'Continue' around the CLI: anything it writes to stderr (warnings, progress) would otherwise be a
+    # terminating NativeCommandError under 'Stop' and kill the whole lane silently.
+    $ErrorActionPreference = 'Continue'
     claude -p "/resolve-issue $n" --model opus --permission-mode auto --output-format stream-json --verbose > "logs\resolve-$n.jsonl" 2> "logs\resolve-$n.err"
     $exit = $LASTEXITCODE
+    $ErrorActionPreference = 'Stop'
     $labels = @((Gitea issue-get -Number $n | ConvertFrom-Json).labels)
     $outcome = if ($labels -contains 'agent:pr-open') { 'pr-open' } elseif ($labels -contains 'agent:blocked') { 'blocked' } else { 'broken' }
     $apiErr = Get-RunError "logs\resolve-$n.jsonl"
