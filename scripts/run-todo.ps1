@@ -42,9 +42,7 @@ $spec = ($lanes | ForEach-Object { $_ -join ',' }) -join ';'
 $i = 0; foreach ($l in $lanes) { $i++; Write-Host "  lane$i : #$($l -join ' -> #')" }
 if ($DryRun) { Write-Host "DryRun: LaneSpec = $spec (라벨·실행 변경 없음)"; return }
 
-foreach ($n in ($lanes | ForEach-Object { $_ })) {
-  powershell -NoProfile -ExecutionPolicy Bypass -File $gitea label-remove -Number $n -Labels 'agent:todo' | Out-Null
-}
+# resolve-queue drops agent:todo per issue as it starts, so a lane that dies leaves the rest queued.
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts\resolve-lanes.ps1 -LaneSpec $spec -MaxLanes 3
 
 } finally { Clear-Lock $lock }

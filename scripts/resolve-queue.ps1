@@ -46,6 +46,9 @@ $summary = @()
 foreach ($n in $list) {
   $start = Get-Date
   $attempt = 0
+  # Drop agent:todo only when this issue actually starts. Clearing the whole batch up front lost #56:
+  # its lane died on the previous issue, so #56 was never processed and no longer looked queued.
+  Gitea label-remove -Number $n -Labels 'agent:todo' | Out-Null
   while ($true) {
     $attempt++
     Write-Host "=== #$n start $($start.ToString('HH:mm')) (attempt $attempt)"
