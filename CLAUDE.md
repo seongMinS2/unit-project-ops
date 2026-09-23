@@ -30,7 +30,7 @@
   - 자동 실행: 평일 9~19시 30분마다 `scripts/sync-if-needed.ps1`이 충돌 여부를 API로만 먼저 확인하고, 충돌이 있을 때만 이 스킬을 실행합니다(예약 작업 `unit-project-pr-watch`). merge된 PR의 이슈 정리는 모델 없이 스크립트로 처리합니다.
 - `gitea`: 모든 Gitea API 호출 (`.claude/skills/gitea`)
 
-- **`agent:todo` 라벨**: 사람(팀원 포함)이 에이전트에게 이슈를 맡기는 창구입니다. `scripts/run-todo.ps1`이 `/plan-todo`(Sonnet)로 파일이 겹치는 이슈끼리 레인을 나누고, `agent:todo`를 뗀 뒤 `resolve-lanes.ps1`로 병렬 처리합니다. 평일 예약 실행 때 자동으로 돌고, 실행이 실패한 이슈는 `agent:todo`로 되돌아가 다음 날 다시 시도합니다.
+- **`agent:todo` 라벨**: 사람(팀원 포함)이 에이전트에게 이슈를 맡기는 창구입니다. `scripts/run-todo.ps1`이 `/plan-todo`(Sonnet)로 파일이 겹치는 이슈끼리 레인을 나누고, `agent:todo`를 뗀 뒤 `resolve-lanes.ps1`로 병렬 처리합니다. **평일 9~19시 30분마다** `scripts/sync-if-needed.ps1`이 확인해 처리를 백그라운드로 시작하므로, 라벨을 붙이면 30분 안에 착수합니다(이미 처리 중이면 건너뜀). 아침 순찰 뒤에도 한 번 돌고, 실행이 실패한 이슈는 `agent:todo`로 되돌아가 다음 회차에 다시 시도합니다. 한 회차에 최대 8건, 레인 3개입니다.
 
 사용자가 "12번 처리해", "#12 고쳐"처럼 말하면 resolve-issue를 실행합니다. "리뷰 돌려", "순찰"이라고 하면 patrol을 실행합니다.
 
