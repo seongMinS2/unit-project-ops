@@ -43,6 +43,6 @@ $i = 0; foreach ($l in $lanes) { $i++; Write-Host "  lane$i : #$($l -join ' -> #
 if ($DryRun) { Write-Host "DryRun: LaneSpec = $spec (라벨·실행 변경 없음)"; return }
 
 # resolve-queue drops agent:todo per issue as it starts, so a lane that dies leaves the rest queued.
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\resolve-lanes.ps1 -LaneSpec $spec -MaxLanes 3
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\resolve-lanes.ps1 -LaneSpec $spec -MaxLanes 5
 
 } finally { Clear-Lock $lock }

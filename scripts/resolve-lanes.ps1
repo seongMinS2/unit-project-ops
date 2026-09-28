@@ -10,7 +10,7 @@
 # hours — the launcher then sat "running" long after the lanes were done, holding the run-todo lock.
 param(
   [Parameter(Mandatory = $true)][string]$LaneSpec,
-  [int]$MaxLanes = 3,          # each lane runs a full Gradle test suite; 3 fits 28 cores / 32 GB
+  [int]$MaxLanes = 5,          # each lane runs Gradle; 5 fits 28 cores / 32 GB (see the RAM check below)
   [int]$TimeoutHours = 6       # a lane that outlives this is killed so the lock cannot be held forever
 )
 $ErrorActionPreference = 'Stop'
@@ -18,6 +18,17 @@ $root = Split-Path $PSScriptRoot -Parent
 Set-Location $root
 $Lanes = @($LaneSpec -split ';' | ForEach-Object { $_.Trim() } | Where-Object { $_ })
 if ($Lanes.Count -gt $MaxLanes) { throw "레인이 $($Lanes.Count)개입니다. 최대 $MaxLanes 개까지 허용됩니다 (-MaxLanes 로 조정)." }
+
+# Each lane can hold a Gradle daemon plus a test JVM (~2.5 GB). Starting five of those on a machine
+# that is already low on memory makes every lane slow instead of making the batch fast.
+$freeGb = [math]::Round((Get-CimInstance Win32_OperatingSystem).FreePhysicalMemory / 1MB, 1)
+$fit = [math]::Max(1, [math]::Floor($freeGb / 2.5))
+if ($fit -lt $Lanes.Count) {
+  Write-Host "여유 메모리 ${freeGb}GB — 동시 레인을 $($Lanes.Count) → $fit 개로 줄입니다(넘치는 레인은 앞 레인 뒤에 순서대로 붙입니다)."
+  $buckets = @(); 1..$fit | ForEach-Object { $buckets += , (New-Object Collections.ArrayList) }
+  for ($k = 0; $k -lt $Lanes.Count; $k++) { [void]$buckets[$k % $fit].Add($Lanes[$k]) }
+  $Lanes = @($buckets | ForEach-Object { ($_ -join ',') } | Where-Object { $_ })
+}
 
 $stamp = Get-Date -Format 'MMdd-HHmm'
 $runs = @()

@@ -9,6 +9,8 @@ model: haiku
 
 ## 실행
 작업 디렉터리는 오케스트레이터가 넘겨준 이슈 전용 worktree(`workspace/wt/issue-N`)입니다. 다른 worktree에서도 동시에 빌드가 돌 수 있으니 `gradlew --stop`처럼 데몬 전체에 영향을 주는 명령은 쓰지 마세요.
+**전체 실행은 비쌉니다(5~8분).** 오케스트레이터가 "관련 테스트만"이라고 하면 전체를 돌리지 마세요. 전체는 검증 직전에 한 번만 돌립니다.
+
 ```powershell
 cd <넘겨받은 worktree 경로>
 .\gradlew.bat test --tests "<요청받은 테스트 패턴>" --console=plain   # 1차: 관련 테스트
