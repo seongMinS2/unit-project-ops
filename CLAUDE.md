@@ -29,6 +29,17 @@
 - `/sync-prs [PR번호]`: dev와 충돌한 에이전트 PR 해결. dev merge → 충돌 해결 → 테스트 → 검증 → push (`.claude/skills/sync-prs`)
   - 자동 실행: 평일 9~19시 30분마다 `scripts/sync-if-needed.ps1`이 충돌 여부를 API로만 먼저 확인하고, 충돌이 있을 때만 이 스킬을 실행합니다(예약 작업 `unit-project-pr-watch`). merge된 PR의 이슈 정리는 모델 없이 스크립트로 처리합니다.
 - **PR 반려**: PR 화면에서 사유를 코멘트로 남기고 Close 하면, 감시가 그 사유를 이슈로 옮겨 적고 `agent:todo` 로 되돌립니다(재시도). 코멘트에 "보류"·"중단" 이 있거나 사유가 없으면 `agent:blocked` 로 둡니다. 이슈 본문을 고치실 필요는 없습니다 — 에이전트는 코멘트도 모두 읽습니다.
+- `/revise-pr <PR번호>`: 열린 PR에 달린 사람 코멘트를 반영해 **같은 브랜치를 고쳐 PR을 갱신**한다. 새 PR을 만들거나 닫지 않는다 (`.claude/skills/revise-pr`)
+
+### 사람이 PR에 하는 행동과 그 결과
+| 사람이 한 것 | 에이전트가 하는 것 |
+|---|---|
+| Merge | 연결된 이슈를 닫는다 (`close-merged`) |
+| **코멘트만 남김** (열린 PR) | 그 요구대로 같은 브랜치를 고쳐 push하고, `## 리뷰 반영` 코멘트로 무엇을 고쳤는지 남긴다 (`revise-prs.ps1` → `/revise-pr`) |
+| 사유 코멘트 + Close | 사유를 이슈로 복사하고 `agent:todo` 로 되돌려 재시도 (`handle-rejected`) |
+| "보류"·"중단" 코멘트 + Close, 또는 사유 없이 Close | 이슈를 `agent:blocked` 로 두고 사유를 묻는다 |
+
+모두 평일 9~19시 30분 간격 감시가 처리한다. 반영·재시도는 각자 잠금을 잡아 중복 실행되지 않는다.
 - `gitea`: 모든 Gitea API 호출 (`.claude/skills/gitea`)
 
 - **`agent:todo` 라벨**: 사람(팀원 포함)이 에이전트에게 이슈를 맡기는 창구입니다. `scripts/run-todo.ps1`이 `/plan-todo`(Sonnet)로 파일이 겹치는 이슈끼리 레인을 나누고, `agent:todo`를 뗀 뒤 `resolve-lanes.ps1`로 병렬 처리합니다. **평일 9~19시 30분마다** `scripts/sync-if-needed.ps1`이 확인해 처리를 백그라운드로 시작하므로, 라벨을 붙이면 30분 안에 착수합니다(이미 처리 중이면 건너뜀). 아침 순찰 뒤에도 한 번 돌고, 실행이 실패한 이슈는 `agent:todo`로 되돌아가 다음 회차에 다시 시도합니다. 한 회차에 최대 8건, 레인 3개입니다.

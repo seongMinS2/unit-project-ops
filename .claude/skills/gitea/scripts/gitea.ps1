@@ -19,6 +19,7 @@
     gitea.ps1 pr-get        -Number 28          (mergeable, head/base, body)
     gitea.ps1 close-merged  [-DryRun]           (close issues whose agent/issue-N PR was merged)
     gitea.ps1 handle-rejected [-DryRun]         (PR closed unmerged -> copy reason to issue, re-queue or block)
+    gitea.ps1 pr-feedback                       (open agent PRs with human comments not yet answered)
 #>
 param(
   [Parameter(Position = 0, Mandatory = $true)][string]$Command,
@@ -202,6 +203,23 @@ switch ($Command) {
       $done += $entry
     }
     Out-Json @{ dryRun = [bool]$DryRun; closed = $done }
+  }
+  'pr-feedback' {
+    # Open agent PRs where a human commented after our last "## 리뷰 반영" marker = a change request
+    # that nothing acts on today (the agents only read issues). Lists them for /revise-pr.
+    $mine = '^(##\s*(리뷰 반영|dev 반영 및 충돌 해결|PR #)|에이전트 처리)'
+    $out = @()
+    foreach ($p in @(Get-All "/repos/$owner/$Repo/pulls?state=open" | Where-Object { $_.head.ref -like 'agent/*' })) {
+      $comments = @(Get-All "/repos/$owner/$Repo/issues/$($p.number)/comments")
+      $lastMark = @($comments | Where-Object { $_.body -match '^##\s*리뷰 반영' } | Select-Object -Last 1)
+      $since = if ($lastMark.Count) { [datetime]$lastMark[0].created_at } else { [datetime]::MinValue }
+      $pending = @($comments | Where-Object { $_.body -and $_.body -notmatch $mine -and ([datetime]$_.created_at) -gt $since })
+      if ($pending.Count) {
+        $out += [pscustomobject]@{ pr = $p.number; head = $p.head.ref; title = $p.title; mergeable = $p.mergeable
+          pending = @($pending | ForEach-Object { @{ user = $_.user.login; at = $_.created_at; body = $_.body } }) }
+      }
+    }
+    Out-Json @{ prs = $out }
   }
   'handle-rejected' {
     # An agent PR closed WITHOUT merge is a rejection. The reason is written on the PR, which the next

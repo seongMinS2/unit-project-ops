@@ -11,11 +11,26 @@ New-Item -ItemType Directory -Force logs | Out-Null
 if (-not $env:GITEA_TOKEN) { $env:GITEA_TOKEN = [Environment]::GetEnvironmentVariable('GITEA_TOKEN', 'User') }
 $gitea = '.claude/skills/gitea/scripts/gitea.ps1'
 function Gitea { powershell -NoProfile -ExecutionPolicy Bypass -File $gitea @args | Out-String | ConvertFrom-Json }
+. "$PSScriptRoot\locks.ps1"
 
 # 0. agent PRs closed WITHOUT merge = rejected. Copy the reason from the PR onto the issue (the next
 #    attempt only reads the issue) and re-queue it, or block it when no reason was given.
 $rejected = @((Gitea handle-rejected).handled | Where-Object { $_ })
 foreach ($r in $rejected) { Write-Host "rejected: PR #$($r.pr) -> issue #$($r.issue) $($r.next) (사유 $($r.reasons)건)" }
+
+# 0b. open agent PRs with review comments nobody answered: revise the branch in place (background,
+#     it takes tens of minutes). Closing the PR is only for "wrong approach" — this is "fix this bit".
+$feedback = @((Gitea pr-feedback).prs | Where-Object { $_ })
+if ($feedback.Count -gt 0) {
+  Write-Host "리뷰 코멘트 미반영: PR #$(($feedback | ForEach-Object { $_.pr }) -join ', #')"
+  if (Test-LockHeld 'logs\revise-prs.lock') { Write-Host '  revise-prs already running, skipping' }
+  elseif ($DryRun) { Write-Host '  would start revise-prs.ps1' }
+  else {
+    $rlog = "logs\revise-prs-$(Get-Date -Format 'MMdd-HHmm').log"
+    Start-Process powershell -WindowStyle Hidden -ArgumentList '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', 'scripts\revise-prs.ps1' -RedirectStandardOutput $rlog -RedirectStandardError "$rlog.err" -WorkingDirectory $root
+    Write-Host "  started revise-prs.ps1 in the background -> $rlog"
+  }
+}
 
 # 1. merged agent PRs whose issue is still open: close them (no model needed)
 $toClose = @((Gitea close-merged -DryRun).closed | Where-Object { $_ })
@@ -23,8 +38,6 @@ if ($toClose.Count -gt 0) {
   if ($DryRun) { Write-Host "would close: #$(($toClose | ForEach-Object issue) -join ', #')" }
   else { $c = Gitea close-merged; Write-Host "closed: $((@($c.closed) | ForEach-Object { "#$($_.issue) (PR #$($_.pr))" }) -join ', ')" }
 }
-
-. "$PSScriptRoot\locks.ps1"
 
 # 2. issues handed to the agents with agent:todo — start a run in the background (it can take hours,
 #    so this watcher must not wait for it; run-todo.ps1 holds its own lock against a second start).
