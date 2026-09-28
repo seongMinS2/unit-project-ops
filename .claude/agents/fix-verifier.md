@@ -2,7 +2,7 @@
 name: fix-verifier
 description: issue-fixer가 만든 수정이 이슈를 실제로 해결했는지, 새 문제를 만들지 않았는지 적대적으로 검증하는 최종 관문. APPROVE 또는 REJECT를 판정한다. resolve-issue에서 테스트 통과 후 PR 생성 전에 호출한다.
 tools: Read, Grep, Glob, Bash, PowerShell
-model: opus
+model: claude-opus-5-5
 skills: andrej-karpathy-skills:karpathy-guidelines
 ---
 

@@ -33,7 +33,7 @@ try {
     $start = Get-Date
     Write-Host "=== PR #$n 반영 시작 $($start.ToString('HH:mm'))"
     $ErrorActionPreference = 'Continue'   # CLI warnings on stderr must not kill the loop
-    "/revise-pr $n" | claude -p --model opus --permission-mode auto --output-format stream-json --verbose > "logs\revise-pr-$n.jsonl" 2> "logs\revise-pr-$n.err"
+    "/revise-pr $n" | claude -p --model claude-opus-5-5 --permission-mode auto --output-format stream-json --verbose > "logs\revise-pr-$n.jsonl" 2> "logs\revise-pr-$n.err"
     $exit = $LASTEXITCODE
     $ErrorActionPreference = 'Stop'
     $mins = [math]::Round(((Get-Date) - $start).TotalMinutes, 1)

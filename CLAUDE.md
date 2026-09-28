@@ -6,22 +6,22 @@
 
 | 역할 | 에이전트 | 모델 | 호출 시점 |
 |---|---|---|---|
-| 총괄 | (메인 세션) | Opus | 항상 |
-| 아키텍처 | `architecture-reviewer` | Opus | patrol: core/infra/bootstrap 변경분, 주간 감사 |
-| 보안 | `security-auditor` | Opus | patrol: api/web/ws/bootstrap/external/빌드 스크립트 변경분, 주간 감사 |
-| 백엔드 | `java-backend-reviewer` | Sonnet | patrol: Java 변경분 |
-| 프론트 | `frontend-reviewer` | Sonnet | patrol: templates*/static* 변경분 |
-| DB | `sql-reviewer` | Sonnet | patrol: infra/SQL/DDL 변경분 |
-| 리팩토링 | `refactor-scout` | Sonnet | patrol: 대규모 변경분, platform 변경분, 주간 감사 |
-| 이슈 관리 | `issue-clerk` | Haiku | patrol: 이슈 등록 단계 |
-| 테스트 실행 | `build-runner` | Haiku | resolve-issue: 테스트 단계 |
-| 이슈 해결 | `issue-fixer` | Sonnet (보안·critical·아키텍처는 Opus로 상향) | resolve-issue: 수정 단계 |
-| 수정 검증 | `fix-verifier` | Opus | resolve-issue: PR 생성 전 / sync-prs: 충돌 해결 후 |
-| 충돌 해결 | `conflict-resolver` | Opus | sync-prs: dev와 충돌한 에이전트 PR |
+| 총괄 | (메인 세션) | Opus 5.5 | 항상 |
+| 아키텍처 | `architecture-reviewer` | Opus 5.5 | patrol: core/infra/bootstrap 변경분, 주간 감사 |
+| 보안 | `security-auditor` | Opus 5.5 | patrol: api/web/ws/bootstrap/external/빌드 스크립트 변경분, 주간 감사 |
+| 백엔드 | `java-backend-reviewer` | Sonnet 5 | patrol: Java 변경분 |
+| 프론트 | `frontend-reviewer` | Sonnet 5 | patrol: templates*/static* 변경분 |
+| DB | `sql-reviewer` | Sonnet 5 | patrol: infra/SQL/DDL 변경분 |
+| 리팩토링 | `refactor-scout` | Sonnet 5 | patrol: 대규모 변경분, platform 변경분, 주간 감사 |
+| 이슈 관리 | `issue-clerk` | Haiku 4.5 | patrol: 이슈 등록 단계 |
+| 테스트 실행 | `build-runner` | Haiku 4.5 | resolve-issue: 테스트 단계 |
+| 이슈 해결 | `issue-fixer` | Sonnet 5 (보안·critical·아키텍처는 Opus 5.5로 상향) | resolve-issue: 수정 단계 |
+| 수정 검증 | `fix-verifier` | Opus 5.5 | resolve-issue: PR 생성 전 / sync-prs: 충돌 해결 후 |
+| 충돌 해결 | `conflict-resolver` | Opus 5.5 | sync-prs: dev와 충돌한 에이전트 PR |
 
 코드를 쓰거나 판정하는 에이전트(`issue-fixer`, `fix-verifier`, `refactor-scout`)에는 **Karpathy Guidelines** 플러그인 스킬(`andrej-karpathy-skills:karpathy-guidelines`)을 미리 로드합니다. 핵심은 다음과 같습니다: 가정을 명시한다, 최소한의 코드로 해결한다, 필요한 곳만 수정한다, 검증 가능한 목표를 세운다. 플러그인은 `.claude/settings.json`에서 활성화합니다.
 
-모델 배정 원칙: **판단이 틀리면 비용이 큰 곳에는 Opus**(보안, 아키텍처, 최종 검증), **양이 많은 일반 리뷰와 구현에는 Sonnet**, **정형화된 반복 작업에는 Haiku**(API 호출, 테스트 실행과 요약)를 씁니다.
+모델 배정 원칙: **판단이 틀리면 비용이 큰 곳에는 Opus 5.5**(보안, 아키텍처, 최종 검증), **양이 많은 일반 리뷰와 구현에는 Sonnet 5**, **정형화된 반복 작업에는 Haiku 4.5**(API 호출, 테스트 실행과 요약)를 씁니다.
 
 ## 워크플로 (스킬)
 - `/patrol`: 정기 순찰. 변경분 리뷰 → 선별 → 이슈 등록 → 리포트 (`.claude/skills/patrol`)

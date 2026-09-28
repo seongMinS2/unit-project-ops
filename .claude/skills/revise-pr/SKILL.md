@@ -34,7 +34,7 @@ git -C workspace/unit-project worktree add -B <PR의 head 브랜치> C:/dev/unit
 - 코멘트가 모호하면 추측하지 말고 그대로 보고합니다. 오케스트레이터가 PR에 되묻습니다.
 - 코멘트가 **사실관계를 정정**한 것이면(예: "이 API는 세션 사용자가 없다") 그 전제 위에서 다시 판단합니다. 기존 구현을 억지로 유지하지 마세요.
 
-`severity/critical`, `type/security`, `type/architecture` 이슈의 PR이면 `model: "opus"`로 올립니다.
+`severity/critical`, `type/security`, `type/architecture` 이슈의 PR이면 `model: "claude-opus-5-5"`로 올립니다.
 
 ## 4. 테스트와 검증
 

@@ -227,8 +227,14 @@ switch ($Command) {
     # "보류"/"중단" in the rejection means "don't try again" -> agent:blocked.
     $ours = '^(## PR #|## dev 반영 및 충돌 해결|에이전트 처리|PR #\d+ 이 .* merge 되어)'
     $closed = @(Get-All "/repos/$owner/$Repo/pulls?state=closed" | Where-Object { -not $_.merged -and $_.head.ref -match '^agent/issue-(\d+)$' })
+    # A branch that has an OPEN PR again is NOT a rejection: when a PR is closed asking for a conflict
+    # resolution, sync-prs resolves it on the same branch and re-submits as a new PR. Re-queueing the
+    # issue then starts a second fix on a branch that already holds the finished, verified work — and
+    # that retry cannot even push (no force push), so it fails and re-queues forever.
+    $openHeads = @(Get-All "/repos/$owner/$Repo/pulls?state=open" | ForEach-Object { $_.head.ref })
     $done = @()
     foreach ($p in $closed) {
+      if ($openHeads -contains $p.head.ref) { continue }
       $n = [int]([regex]::Match($p.head.ref, '^agent/issue-(\d+)$').Groups[1].Value)
       $i = Invoke-Gitea GET "/repos/$owner/$Repo/issues/$n"
       if ($i.state -ne 'open') { continue }

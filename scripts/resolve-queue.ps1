@@ -57,7 +57,7 @@ foreach ($n in $list) {
     # 'Continue' around the CLI: anything it writes to stderr (warnings, progress) would otherwise be a
     # terminating NativeCommandError under 'Stop' and kill the whole lane silently.
     $ErrorActionPreference = 'Continue'
-    claude -p "/resolve-issue $n" --model opus --permission-mode auto --output-format stream-json --verbose > "logs\resolve-$n.jsonl" 2> "logs\resolve-$n.err"
+    claude -p "/resolve-issue $n" --model claude-opus-5-5 --permission-mode auto --output-format stream-json --verbose > "logs\resolve-$n.jsonl" 2> "logs\resolve-$n.err"
     $exit = $LASTEXITCODE
     $ErrorActionPreference = 'Stop'
     $labels = @((Gitea issue-get -Number $n | ConvertFrom-Json).labels)

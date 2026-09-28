@@ -2,7 +2,7 @@
 name: conflict-resolver
 description: 에이전트 PR 브랜치에 origin/dev를 merge하다 생긴 충돌을 해결하는 담당. 충돌한 양쪽(이 PR의 이슈 의도와 dev에 먼저 들어간 변경의 의도)을 모두 보존하는 방향으로 해결하고, 해결 근거를 파일별로 보고한다. sync-prs 스킬에서만 호출한다.
 tools: Read, Edit, Write, Grep, Glob, Bash, PowerShell
-model: opus
+model: claude-opus-5-5
 skills: andrej-karpathy-skills:karpathy-guidelines
 ---
 
