@@ -11,7 +11,8 @@ description: unit-project에서 agent:todo 라벨이 붙은(사람이 에이전�
 
 - 인자로 번호가 오면 그 이슈들이 대상입니다.
 - 인자가 없으면 `gitea` 스킬로 `issue-list -Labels agent:todo`를 실행해 열린 이슈를 가져옵니다.
-- `agent:in-progress`, `agent:pr-open`, `agent:blocked` 라벨이 함께 붙은 이슈는 이미 누군가 처리 중이거나 막힌 것이므로 `skipped`로 보냅니다.
+- `agent:in-progress`, `agent:pr-open`이 함께 붙은 이슈는 이미 처리 중이므로 `skipped`로 보냅니다.
+- `agent:blocked`와 `agent:todo`가 **함께** 붙어 있으면 사람이 답을 주고 다시 맡긴 것입니다. 건너뛰지 말고 **포함**하세요(착수할 때 `agent:blocked`는 자동으로 제거됩니다). 막혔던 질문에 대한 답이 코멘트에 있으니, 그 이슈를 맡는 세션은 코멘트를 끝까지 읽어야 합니다.
 
 ## 2. 이슈별 영향 범위 추정
 

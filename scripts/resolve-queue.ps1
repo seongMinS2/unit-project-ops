@@ -48,7 +48,9 @@ foreach ($n in $list) {
   $attempt = 0
   # Drop agent:todo only when this issue actually starts. Clearing the whole batch up front lost #56:
   # its lane died on the previous issue, so #56 was never processed and no longer looked queued.
-  Gitea label-remove -Number $n -Labels 'agent:todo' | Out-Null
+  # agent:blocked goes too: a human who re-queued a blocked issue has answered its question, and the
+  # stale label would otherwise make the next planning pass skip it.
+  Gitea label-remove -Number $n -Labels 'agent:todo,agent:blocked' | Out-Null
   while ($true) {
     $attempt++
     Write-Host "=== #$n start $($start.ToString('HH:mm')) (attempt $attempt)"
