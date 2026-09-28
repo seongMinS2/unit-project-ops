@@ -146,6 +146,24 @@ function Serve-Static($ctx, [string]$p) {
   Send $ctx 200 $mime[[IO.Path]::GetExtension($name)] ([IO.File]::ReadAllBytes($file))
 }
 
+# 대기 중인 agent:todo 이슈 처리를 지금 시작한다(감시 작업의 30분 주기를 기다리지 않게).
+# POST 만 받는다 — 이 대시보드에는 인증이 없어서, GET 으로 열리면 링크 미리보기나 크롤러가 실행시킬 수 있다.
+function Start-RunTodo($ctx) {
+  if ($ctx.Request.HttpMethod -ne 'POST') { return Send-Json $ctx @{ error = 'POST only' } 405 }
+  $lock = Join-Path $root 'logs\run-todo.lock'
+  if (Test-Path $lock) {
+    $lockPid = [int](((Get-Content $lock -ErrorAction SilentlyContinue) -split '\|')[0])
+    if ($lockPid -and (Get-Process -Id $lockPid -ErrorAction SilentlyContinue)) {
+      return Send-Json $ctx @{ started = $false; reason = 'already-running'; pid = $lockPid }
+    }
+  }
+  $log = "logs\run-todo-dash-$(Get-Date -Format 'MMdd-HHmm').log"
+  Start-Process powershell -WindowStyle Hidden -WorkingDirectory $root `
+    -ArgumentList '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', 'scripts\run-todo.ps1' `
+    -RedirectStandardOutput (Join-Path $root $log) -RedirectStandardError (Join-Path $root "$log.err") | Out-Null
+  Send-Json $ctx @{ started = $true; log = [IO.Path]::GetFileName($log) }
+}
+
 $listener = New-Object Net.HttpListener
 $listener.Prefixes.Add("http://localhost:$Port/")
 $listener.Start()
@@ -164,6 +182,7 @@ try {
         '/api/log'   { Get-Log $ctx $q['name'] ([long]("0" + $q['from'])) }
         '/api/gitea' { Send-Json $ctx (Get-Gitea) }
         '/api/state' { Send-Json $ctx (Get-State) }
+        '/api/run-todo' { Start-RunTodo $ctx }
         default      { Serve-Static $ctx $url.AbsolutePath }
       }
     } catch {

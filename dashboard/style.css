@@ -173,3 +173,12 @@ button.primary { border-color: var(--opus); }
   .right { grid-template-columns: 1fr; }
   .org { grid-template-columns: 1fr; }
 }
+
+/* 지금 실행 — agent:todo 처리를 즉시 시작한다(감시 30분 주기 대기 없이). 응답에 따라 data-state 가 바뀐다. */
+.run-now { font: inherit; font-size: 12px; padding: 6px 12px; border-radius: 6px; cursor: pointer;
+  color: var(--ink-2); background: var(--surface); border: 1px solid var(--line); white-space: nowrap; }
+.run-now:hover:not(:disabled) { color: var(--ink); border-color: var(--ink-2); }
+.run-now:disabled { opacity: .5; cursor: default; }
+.run-now[data-state="started"] { color: var(--good); border-color: var(--good); }
+.run-now[data-state="busy"] { color: var(--muted); }
+.run-now[data-state="error"] { color: var(--critical); border-color: var(--critical); }

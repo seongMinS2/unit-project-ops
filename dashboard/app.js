@@ -735,3 +735,25 @@ slowTick();
 setInterval(tick, 2000);
 setInterval(slowTick, 30000);
 requestAnimationFrame(frame);
+
+/* 지금 실행 버튼 — POST /api/run-todo. 서버가 잠금을 보고 이미 돌고 있으면 started:false 를 준다.
+   비용이 드는 작업이라 확인을 한 번 받는다(이 대시보드에는 인증이 없다). */
+(function () {
+  const btn = document.getElementById('runNow');
+  if (!btn) return;
+  const reset = (ms) => setTimeout(() => { btn.textContent = '지금 실행'; btn.removeAttribute('data-state'); btn.disabled = false; }, ms);
+  btn.addEventListener('click', async () => {
+    if (!confirm('대기 중인 agent:todo 이슈 처리를 지금 시작할까요?\n이슈당 20~40분이 걸리고 비용이 발생합니다.')) return;
+    btn.disabled = true; btn.textContent = '시작하는 중…';
+    try {
+      const res = await fetch('api/run-todo', { method: 'POST' });
+      const data = await res.json();
+      if (data.started) { btn.dataset.state = 'started'; btn.textContent = '시작됨'; }
+      else if (data.reason === 'already-running') { btn.dataset.state = 'busy'; btn.textContent = '이미 실행 중'; }
+      else { btn.dataset.state = 'error'; btn.textContent = data.error || '실패'; }
+    } catch (e) {
+      btn.dataset.state = 'error'; btn.textContent = '연결 실패';
+    }
+    reset(6000);
+  });
+})();
