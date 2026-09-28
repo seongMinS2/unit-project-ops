@@ -28,6 +28,7 @@
 - `/resolve-issue <번호>`: 지정 이슈 처리. 브랜치 → 수정 → 테스트 → 검증 → PR (`.claude/skills/resolve-issue`)
 - `/sync-prs [PR번호]`: dev와 충돌한 에이전트 PR 해결. dev merge → 충돌 해결 → 테스트 → 검증 → push (`.claude/skills/sync-prs`)
   - 자동 실행: 평일 9~19시 30분마다 `scripts/sync-if-needed.ps1`이 충돌 여부를 API로만 먼저 확인하고, 충돌이 있을 때만 이 스킬을 실행합니다(예약 작업 `unit-project-pr-watch`). merge된 PR의 이슈 정리는 모델 없이 스크립트로 처리합니다.
+- **PR 반려**: PR 화면에서 사유를 코멘트로 남기고 Close 하면, 감시가 그 사유를 이슈로 옮겨 적고 `agent:todo` 로 되돌립니다(재시도). 코멘트에 "보류"·"중단" 이 있거나 사유가 없으면 `agent:blocked` 로 둡니다. 이슈 본문을 고치실 필요는 없습니다 — 에이전트는 코멘트도 모두 읽습니다.
 - `gitea`: 모든 Gitea API 호출 (`.claude/skills/gitea`)
 
 - **`agent:todo` 라벨**: 사람(팀원 포함)이 에이전트에게 이슈를 맡기는 창구입니다. `scripts/run-todo.ps1`이 `/plan-todo`(Sonnet)로 파일이 겹치는 이슈끼리 레인을 나누고, `agent:todo`를 뗀 뒤 `resolve-lanes.ps1`로 병렬 처리합니다. **평일 9~19시 30분마다** `scripts/sync-if-needed.ps1`이 확인해 처리를 백그라운드로 시작하므로, 라벨을 붙이면 30분 안에 착수합니다(이미 처리 중이면 건너뜀). 아침 순찰 뒤에도 한 번 돌고, 실행이 실패한 이슈는 `agent:todo`로 되돌아가 다음 회차에 다시 시도합니다. 한 회차에 최대 8건, 레인 3개입니다.

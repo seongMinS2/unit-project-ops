@@ -12,6 +12,11 @@ if (-not $env:GITEA_TOKEN) { $env:GITEA_TOKEN = [Environment]::GetEnvironmentVar
 $gitea = '.claude/skills/gitea/scripts/gitea.ps1'
 function Gitea { powershell -NoProfile -ExecutionPolicy Bypass -File $gitea @args | Out-String | ConvertFrom-Json }
 
+# 0. agent PRs closed WITHOUT merge = rejected. Copy the reason from the PR onto the issue (the next
+#    attempt only reads the issue) and re-queue it, or block it when no reason was given.
+$rejected = @((Gitea handle-rejected).handled | Where-Object { $_ })
+foreach ($r in $rejected) { Write-Host "rejected: PR #$($r.pr) -> issue #$($r.issue) $($r.next) (사유 $($r.reasons)건)" }
+
 # 1. merged agent PRs whose issue is still open: close them (no model needed)
 $toClose = @((Gitea close-merged -DryRun).closed | Where-Object { $_ })
 if ($toClose.Count -gt 0) {

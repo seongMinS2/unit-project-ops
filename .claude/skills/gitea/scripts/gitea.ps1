@@ -18,6 +18,7 @@
     gitea.ps1 pr-list       [-State open]
     gitea.ps1 pr-get        -Number 28          (mergeable, head/base, body)
     gitea.ps1 close-merged  [-DryRun]           (close issues whose agent/issue-N PR was merged)
+    gitea.ps1 handle-rejected [-DryRun]         (PR closed unmerged -> copy reason to issue, re-queue or block)
 #>
 param(
   [Parameter(Position = 0, Mandatory = $true)][string]$Command,
@@ -201,6 +202,45 @@ switch ($Command) {
       $done += $entry
     }
     Out-Json @{ dryRun = [bool]$DryRun; closed = $done }
+  }
+  'handle-rejected' {
+    # An agent PR closed WITHOUT merge is a rejection. The reason is written on the PR, which the next
+    # attempt never reads (resolve-issue reads the issue), so copy it onto the issue and re-queue.
+    # "보류"/"중단" in the rejection means "don't try again" -> agent:blocked.
+    $ours = '^(## PR #|## dev 반영 및 충돌 해결|에이전트 처리|PR #\d+ 이 .* merge 되어)'
+    $closed = @(Get-All "/repos/$owner/$Repo/pulls?state=closed" | Where-Object { -not $_.merged -and $_.head.ref -match '^agent/issue-(\d+)$' })
+    $done = @()
+    foreach ($p in $closed) {
+      $n = [int]([regex]::Match($p.head.ref, '^agent/issue-(\d+)$').Groups[1].Value)
+      $i = Invoke-Gitea GET "/repos/$owner/$Repo/issues/$n"
+      if ($i.state -ne 'open') { continue }
+      # NOT $labels: that is the script's [string]$Labels parameter, and assigning an array to it
+      # silently joins it into one string, which made this check skip every issue.
+      $issueLabels = @($i.labels | ForEach-Object { $_.name })
+      if ($issueLabels -notcontains 'agent:pr-open') { continue }   # already handled or never ours
+      $reasons = @(Get-All "/repos/$owner/$Repo/issues/$($p.number)/comments" | Where-Object { $_.body -and $_.body -notmatch $ours } |
+        ForEach-Object { "> **$($_.user.login)** ($($_.created_at.Substring(0,16))): " + ($_.body -replace "`r?`n", "`n> ") })
+      # No stated reason -> do not retry: the next attempt would most likely rebuild the same PR.
+      $hold = ($reasons.Count -eq 0) -or (($reasons -join ' ') -match '보류|중단|hold')
+      $next = if ($hold) { 'agent:blocked' } else { 'agent:todo' }
+      $body = "## PR #$($p.number) 반려됨 (merge 없이 닫힘)`n`n" +
+              "- 닫힌 시각: $($p.closed_at)`n- 브랜치 ``$($p.head.ref)`` 는 원격에 남아 있습니다. 다시 시도할 때는 최신 dev 에서 새로 시작합니다.`n`n### 반려 사유`n" +
+              $(if ($reasons.Count) { ($reasons -join "`n`n") } else { '닫을 때 남긴 사유가 없습니다. 사유를 모른 채 다시 시도하면 같은 PR 을 또 만들 가능성이 큽니다.' }) +
+              "`n`n### 다음`n" +
+              $(if ($reasons.Count -eq 0) { '`agent:blocked` 로 두었습니다. **이 이슈에 반려 사유를 코멘트로 남기고 `agent:todo` 라벨을 붙여 주세요.** 그러면 사유를 반영해 다시 시도합니다.' }
+                elseif ($hold) { '`agent:blocked` 로 두었습니다. 다시 맡기시려면 `agent:todo` 라벨을 붙여 주세요.' }
+                else { '`agent:todo` 로 되돌렸습니다. 다음 처리 회차에서 위 사유를 반영해 다시 시도합니다.' })
+      if (-not $DryRun) {
+        Invoke-Gitea POST "/repos/$owner/$Repo/issues/$n/comments" @{ body = $body } | Out-Null
+        foreach ($l in @($i.labels | Where-Object { $_.name -eq 'agent:pr-open' })) {
+          try { Invoke-Gitea DELETE "/repos/$owner/$Repo/issues/$n/labels/$($l.id)" | Out-Null } catch { }
+        }
+        $id = (Get-All "/repos/$owner/$Repo/labels" | Where-Object { $_.name -eq $next } | Select-Object -First 1).id
+        Invoke-Gitea POST "/repos/$owner/$Repo/issues/$n/labels" @{ labels = @([int64]$id) } | Out-Null
+      }
+      $done += [pscustomobject]@{ issue = $n; pr = $p.number; next = $next; reasons = $reasons.Count }
+    }
+    Out-Json @{ dryRun = [bool]$DryRun; handled = $done }
   }
   'pr-get' {
     $p = Invoke-Gitea GET "/repos/$owner/$Repo/pulls/$Number"
