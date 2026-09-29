@@ -46,6 +46,14 @@ $summary = @()
 foreach ($n in $list) {
   $start = Get-Date
   $attempt = 0
+  # A plan is minutes old by the time a lane reaches an issue (and hours for the last one in a lane).
+  # A human may have closed the issue meanwhile — #155 was closed as mis-filed and still got worked on.
+  $state = (Gitea issue-get -Number $n | ConvertFrom-Json).state
+  if ($state -ne 'open') {
+    Write-Host "=== #$n skipped: issue is $state"
+    $summary += [pscustomobject]@{ issue = $n; outcome = 'skipped'; attempts = 0; exit = 0; minutes = 0 }
+    continue
+  }
   # Drop agent:todo only when this issue actually starts. Clearing the whole batch up front lost #56:
   # its lane died on the previous issue, so #56 was never processed and no longer looked queued.
   # agent:blocked goes too: a human who re-queued a blocked issue has answered its question, and the
@@ -79,7 +87,8 @@ foreach ($n in $list) {
     # The run itself failed (not an agent decision like `blocked`): hand the issue back to the
     # agent:todo queue so the next scheduled run retries it, and stop this lane.
     Reset-Attempt $n
-    Gitea label-add -Number $n -Labels 'agent:todo' | Out-Null
+    # Never re-queue an issue a human closed during the run — the next batch would pick it up again.
+    if ((Gitea issue-get -Number $n | ConvertFrom-Json).state -eq 'open') { Gitea label-add -Number $n -Labels 'agent:todo' | Out-Null }
     Write-Host "=== lane stopped at #${n} (re-queued as agent:todo): $($apiErr -replace '\s+',' ') -- see logs\resolve-$n.*"
     break
   }
