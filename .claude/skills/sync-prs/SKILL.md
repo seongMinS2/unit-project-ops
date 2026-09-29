@@ -24,7 +24,7 @@ Gitea의 `mergeable`은 dev가 바뀐 직후 잠시 갱신되지 않을 수 있�
 PR 번호를 N, head 브랜치를 B라고 합니다. worktree 경로는 **반드시 절대 경로**를 씁니다: `$WT = C:/dev/unit-project-ops/workspace/wt/pr-N`
 
 1. **준비**
-   `$WT` 폴더가 **이미 있으면 그 PR은 건너뛰고** 보고에 "다른 세션이 처리 중"이라고 적습니다. 두 세션이 한 worktree에서 동시에 merge하면 서로의 해결을 덮어씁니다. 실제로 그런 사고가 한 번 있었습니다. `/sync-prs`는 원칙적으로 `scripts/sync-if-needed.ps1`(잠금 사용)을 통해서만 실행합니다.
+   `$WT` 폴더가 **이미 있으면 그 PR은 건너뛰고** 보고에 "다른 세션이 처리 중"이라고 적습니다. 두 세션이 한 worktree에서 동시에 merge하면 서로의 해결을 덮어씁니다. 실제로 그런 사고가 한 번 있었습니다. `/sync-prs`는 원칙적으로 `scripts/sync-prs.ps1`(잠금 사용, 감시 `sync-if-needed.ps1`이 시작)을 통해서만 실행합니다.
    ```powershell
    git -C workspace/unit-project fetch origin --prune
    git -C workspace/unit-project worktree add -B B C:/dev/unit-project-ops/workspace/wt/pr-N origin/B
@@ -50,7 +50,7 @@ PR 번호를 N, head 브랜치를 B라고 합니다. worktree 경로는 **반드
    ```
    PR에 코멘트를 남깁니다(`issue-comment -Number N`).
    ```markdown
-   dev 반영 및 충돌 해결 (자동)
+   ## dev 반영 및 충돌 해결 (자동)
    - 원인: #K 가 먼저 merge 되며 `파일` 충돌
    - 해결: (resolver 의 파일별 resolution 요약)
    - dev 가 이미 달성해 뺀 변경: ...

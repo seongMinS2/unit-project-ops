@@ -27,7 +27,7 @@
 - `/patrol`: 정기 순찰. 변경분 리뷰 → 선별 → 이슈 등록 → 리포트 (`.claude/skills/patrol`)
 - `/resolve-issue <번호>`: 지정 이슈 처리. 브랜치 → 수정 → 테스트 → 검증 → PR (`.claude/skills/resolve-issue`)
 - `/sync-prs [PR번호]`: dev와 충돌한 에이전트 PR 해결. dev merge → 충돌 해결 → 테스트 → 검증 → push (`.claude/skills/sync-prs`)
-  - 자동 실행: 평일 9~19시 30분마다 `scripts/sync-if-needed.ps1`이 충돌 여부를 API로만 먼저 확인하고, 충돌이 있을 때만 이 스킬을 실행합니다(예약 작업 `unit-project-pr-watch`). merge된 PR의 이슈 정리는 모델 없이 스크립트로 처리합니다.
+  - 자동 실행: 평일 9~19시 **1분마다** Windows 작업 `unit-project-pr-watch`(`scripts/watch.ps1` → `scripts/sync-if-needed.ps1`)가 API로만 상태를 확인합니다. 점검 자체는 모델을 부르지 않아 토큰이 들지 않습니다. 충돌이 있으면 `scripts/sync-prs.ps1`(잠금)을 백그라운드로 시작합니다. 사람이 PR을 연달아 merge하는 경우를 위해 **dev가 3분간 조용해진 뒤** 시작합니다. merge된 PR의 이슈 정리는 모델 없이 스크립트로 처리합니다. 한 일은 `logs/watch-<날짜>.log`에 남습니다.
 - **PR 반려**: PR 화면에서 사유를 코멘트로 남기고 Close 하면, 감시가 그 사유를 이슈로 옮겨 적고 `agent:todo` 로 되돌립니다(재시도). 코멘트에 "보류"·"중단" 이 있거나 사유가 없으면 `agent:blocked` 로 둡니다. 이슈 본문을 고치실 필요는 없습니다 — 에이전트는 코멘트도 모두 읽습니다.
 - `/revise-pr <PR번호>`: 열린 PR에 달린 사람 코멘트를 반영해 **같은 브랜치를 고쳐 PR을 갱신**한다. 새 PR을 만들거나 닫지 않는다 (`.claude/skills/revise-pr`)
 
@@ -39,10 +39,10 @@
 | 사유 코멘트 + Close | 사유를 이슈로 복사하고 `agent:todo` 로 되돌려 재시도 (`handle-rejected`) |
 | "보류"·"중단" 코멘트 + Close, 또는 사유 없이 Close | 이슈를 `agent:blocked` 로 두고 사유를 묻는다 |
 
-모두 평일 9~19시 30분 간격 감시가 처리한다. 반영·재시도는 각자 잠금을 잡아 중복 실행되지 않는다.
+모두 평일 9~19시 1분 간격 감시가 처리한다. 닫기·코멘트 직후 2분은 기다린다(사유 코멘트를 이어 쓰는 중일 수 있음). 반영·재시도는 각자 잠금을 잡아 중복 실행되지 않는다. **충돌 난 PR은 닫지 말고 두면** 충돌 해결 에이전트가 같은 PR을 고친다.
 - `gitea`: 모든 Gitea API 호출 (`.claude/skills/gitea`)
 
-- **`agent:todo` 라벨**: 사람(팀원 포함)이 에이전트에게 이슈를 맡기는 창구입니다. `scripts/run-todo.ps1`이 `/plan-todo`(Sonnet)로 파일이 겹치는 이슈끼리 레인을 나누고, `agent:todo`를 뗀 뒤 `resolve-lanes.ps1`로 병렬 처리합니다. **평일 9~19시 30분마다** `scripts/sync-if-needed.ps1`이 확인해 처리를 백그라운드로 시작하므로, 라벨을 붙이면 30분 안에 착수합니다(이미 처리 중이면 건너뜀). 아침 순찰 뒤에도 한 번 돌고, 실행이 실패한 이슈는 `agent:todo`로 되돌아가 다음 회차에 다시 시도합니다. 한 회차에 최대 8건, 레인 3개입니다.
+- **`agent:todo` 라벨**: 사람(팀원 포함)이 에이전트에게 이슈를 맡기는 창구입니다. `scripts/run-todo.ps1`이 `/plan-todo`(Sonnet)로 파일이 겹치는 이슈끼리 레인을 나누고, `agent:todo`를 뗀 뒤 `resolve-lanes.ps1`로 병렬 처리합니다. **평일 9~19시 1분마다** `scripts/sync-if-needed.ps1`이 확인해 처리를 백그라운드로 시작하므로, 라벨을 붙이면 1분 안에 착수합니다(이미 처리 중이면 끝난 뒤 다음 회차). 실행이 실패한 이슈는 `agent:todo`로 되돌아가 다음 회차에 다시 시도합니다. 한 회차에 최대 12건, 레인 5개입니다.
 
 사용자가 "12번 처리해", "#12 고쳐"처럼 말하면 resolve-issue를 실행합니다. "리뷰 돌려", "순찰"이라고 하면 patrol을 실행합니다.
 

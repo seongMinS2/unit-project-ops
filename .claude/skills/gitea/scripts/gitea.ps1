@@ -17,9 +17,11 @@
     gitea.ps1 pr-create     -Head agent/issue-12 -Title "..." -BodyFile pr.md [-Base dev]
     gitea.ps1 pr-list       [-State open]
     gitea.ps1 pr-get        -Number 28          (mergeable, head/base, body)
+    gitea.ps1 branch-get    -Head dev           (latest commit sha and time)
     gitea.ps1 close-merged  [-DryRun]           (close issues whose agent/issue-N PR was merged)
-    gitea.ps1 handle-rejected [-DryRun]         (PR closed unmerged -> copy reason to issue, re-queue or block)
-    gitea.ps1 pr-feedback                       (open agent PRs with human comments not yet answered)
+    gitea.ps1 handle-rejected [-DryRun] [-GraceMinutes 2]  (PR closed unmerged -> copy reason to issue, re-queue or block)
+    gitea.ps1 pr-feedback [-GraceMinutes 2]     (open agent PRs with human comments not yet answered)
+      -GraceMinutes: ignore PRs closed / commented less than N minutes ago — the human may still be typing
 #>
 param(
   [Parameter(Position = 0, Mandatory = $true)][string]$Command,
@@ -33,6 +35,7 @@ param(
   [string]$Head,
   [string]$Base,
   [string]$Description = '',
+  [int]$GraceMinutes = 0,
   [switch]$DryRun
 )
 $ErrorActionPreference = 'Stop'
@@ -207,15 +210,17 @@ switch ($Command) {
   'pr-feedback' {
     # Open agent PRs where a human commented after our last "## 리뷰 반영" marker = a change request
     # that nothing acts on today (the agents only read issues). Lists them for /revise-pr.
-    $mine = '^(##\s*(리뷰 반영|dev 반영 및 충돌 해결|PR #)|에이전트 처리)'
+    $mine = '^(##\s*(리뷰 반영|dev 반영 및 충돌 해결|PR #)|dev 반영 및 충돌 해결 \(자동\)|에이전트 처리)'
     $out = @()
     foreach ($p in @(Get-All "/repos/$owner/$Repo/pulls?state=open" | Where-Object { $_.head.ref -like 'agent/*' })) {
       $comments = @(Get-All "/repos/$owner/$Repo/issues/$($p.number)/comments")
       $lastMark = @($comments | Where-Object { $_.body -match '^##\s*리뷰 반영' } | Select-Object -Last 1)
       $since = if ($lastMark.Count) { [datetime]$lastMark[0].created_at } else { [datetime]::MinValue }
       $pending = @($comments | Where-Object { $_.body -and $_.body -notmatch $mine -and ([datetime]$_.created_at) -gt $since })
+      # Latest comment still fresh: the reviewer may be adding more. Wait so one revision covers all of it.
+      if ($pending.Count -and ([datetime]$pending[-1].created_at) -gt (Get-Date).AddMinutes(-$GraceMinutes)) { continue }
       if ($pending.Count) {
-        $out += [pscustomobject]@{ pr = $p.number; head = $p.head.ref; title = $p.title; mergeable = $p.mergeable
+        $out +=[pscustomobject]@{ pr = $p.number; head = $p.head.ref; title = $p.title; mergeable = $p.mergeable
           pending = @($pending | ForEach-Object { @{ user = $_.user.login; at = $_.created_at; body = $_.body } }) }
       }
     }
@@ -225,7 +230,7 @@ switch ($Command) {
     # An agent PR closed WITHOUT merge is a rejection. The reason is written on the PR, which the next
     # attempt never reads (resolve-issue reads the issue), so copy it onto the issue and re-queue.
     # "보류"/"중단" in the rejection means "don't try again" -> agent:blocked.
-    $ours = '^(## PR #|## dev 반영 및 충돌 해결|에이전트 처리|PR #\d+ 이 .* merge 되어)'
+    $ours = '^(## PR #|(## )?dev 반영 및 충돌 해결|에이전트 처리|PR #\d+ 이 .* merge 되어)'
     $closed = @(Get-All "/repos/$owner/$Repo/pulls?state=closed" | Where-Object { -not $_.merged -and $_.head.ref -match '^agent/issue-(\d+)$' })
     # A branch that has an OPEN PR again is NOT a rejection: when a PR is closed asking for a conflict
     # resolution, sync-prs resolves it on the same branch and re-submits as a new PR. Re-queueing the
@@ -235,7 +240,9 @@ switch ($Command) {
     $done = @()
     foreach ($p in $closed) {
       if ($openHeads -contains $p.head.ref) { continue }
-      $n = [int]([regex]::Match($p.head.ref, '^agent/issue-(\d+)$').Groups[1].Value)
+      # Just closed: the reason comment often follows the close by a few seconds.
+      if (([datetime]$p.closed_at) -gt (Get-Date).AddMinutes(-$GraceMinutes)) { continue }
+      $n =[int]([regex]::Match($p.head.ref, '^agent/issue-(\d+)$').Groups[1].Value)
       $i = Invoke-Gitea GET "/repos/$owner/$Repo/issues/$n"
       if ($i.state -ne 'open') { continue }
       # NOT $labels: that is the script's [string]$Labels parameter, and assigning an array to it
@@ -265,6 +272,10 @@ switch ($Command) {
       $done += [pscustomobject]@{ issue = $n; pr = $p.number; next = $next; reasons = $reasons.Count }
     }
     Out-Json @{ dryRun = [bool]$DryRun; handled = $done }
+  }
+  'branch-get' {
+    $b = Invoke-Gitea GET "/repos/$owner/$Repo/branches/$Head"
+    Out-Json @{ name = $b.name; sha = $b.commit.id; timestamp = $b.commit.timestamp }
   }
   'pr-get' {
     $p = Invoke-Gitea GET "/repos/$owner/$Repo/pulls/$Number"

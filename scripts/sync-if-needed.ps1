@@ -1,8 +1,8 @@
-﻿# Cheap watcher for agent PRs, meant to run every ~30 min during work hours.
-#   - nothing to do            -> exits without calling a model
+﻿# Cheap watcher for agent PRs, run every minute during work hours by the Windows task
+# "unit-project-pr-watch" (scripts\watch.ps1). A check takes a few seconds and calls no model.
 #   - merged PR, issue open    -> gitea.ps1 close-merged (script only, no model)
-#   - agent PR conflicts w/dev -> "/sync-prs" headless (Opus), unless a previous sync is still running
-param([switch]$DryRun)
+#   - agent:todo / review comments / conflicts -> start the model run in the background and return
+param([switch]$DryRun, [int]$GraceMinutes = 2, [int]$DevQuietMinutes = 3)
 $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = [Text.Encoding]::UTF8
 $root = Split-Path $PSScriptRoot -Parent
@@ -15,12 +15,12 @@ function Gitea { powershell -NoProfile -ExecutionPolicy Bypass -File $gitea @arg
 
 # 0. agent PRs closed WITHOUT merge = rejected. Copy the reason from the PR onto the issue (the next
 #    attempt only reads the issue) and re-queue it, or block it when no reason was given.
-$rejected = @((Gitea handle-rejected).handled | Where-Object { $_ })
+$rejected = @((Gitea handle-rejected -GraceMinutes $GraceMinutes).handled | Where-Object { $_ })
 foreach ($r in $rejected) { Write-Host "rejected: PR #$($r.pr) -> issue #$($r.issue) $($r.next) (사유 $($r.reasons)건)" }
 
 # 0b. open agent PRs with review comments nobody answered: revise the branch in place (background,
 #     it takes tens of minutes). Closing the PR is only for "wrong approach" — this is "fix this bit".
-$feedback = @((Gitea pr-feedback).prs | Where-Object { $_ })
+$feedback = @((Gitea pr-feedback -GraceMinutes $GraceMinutes).prs | Where-Object { $_ })
 if ($feedback.Count -gt 0) {
   Write-Host "리뷰 코멘트 미반영: PR #$(($feedback | ForEach-Object { $_.pr }) -join ', #')"
   if (Test-LockHeld 'logs\revise-prs.lock') { Write-Host '  revise-prs already running, skipping' }
@@ -58,18 +58,12 @@ if ($todo.Count -gt 0) {
 $conflicts = @(Gitea pr-list -State open | ForEach-Object { $_ } | Where-Object { $_.head -like 'agent/*' -and $_.mergeable -eq $false })
 if ($conflicts.Count -eq 0) { Write-Host 'no conflicting agent PRs'; exit 0 }
 Write-Host "conflicting agent PRs: #$(($conflicts | ForEach-Object number) -join ', #')"
-if ($DryRun) { exit 0 }
-
-# One sync at a time (the lock is taken over if the holder hangs past the stale window).
-$lock = 'logs\sync-prs.lock'
-if (Test-LockHeld $lock) { Write-Host 'sync-prs already running, skipping'; exit 0 }
-Set-Lock $lock
-try {
-  $stamp = Get-Date -Format 'MMdd-HHmm'
-  $env:CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS = '0'   # let a full test run finish instead of cutting the session
-  $ErrorActionPreference = 'Continue'               # CLI warnings on stderr must not kill this script
-  '/sync-prs' | claude -p --model claude-opus-5-5 --permission-mode auto --output-format stream-json --verbose > "logs\sync-prs-$stamp.jsonl" 2> "logs\sync-prs-$stamp.err"
-  $ErrorActionPreference = 'Stop'
-  $r = Get-Content -Encoding UTF8 "logs\sync-prs-$stamp.jsonl" | ForEach-Object { try { $_ | ConvertFrom-Json } catch {} } | Where-Object { $_.type -eq 'result' } | Select-Object -Last 1
-  Write-Host "sync-prs finished (is_error=$($r.is_error)):"; Write-Host $r.result
-} finally { Clear-Lock $lock }
+if (Test-LockHeld 'logs\sync-prs.lock') { Write-Host '  sync-prs already running, skipping'; exit 0 }
+# Humans usually merge several PRs in a row. Syncing after the first merge means syncing again after
+# the next one (an Opus run each), so wait until dev has been quiet for a few minutes.
+$devAge = ((Get-Date) - [datetime](Gitea branch-get -Head dev).timestamp).TotalMinutes
+if ($devAge -lt $DevQuietMinutes) { Write-Host ("  dev changed {0:N0} min ago, waiting for it to settle ({1} min)" -f $devAge, $DevQuietMinutes); exit 0 }
+if ($DryRun) { Write-Host '  would start sync-prs.ps1'; exit 0 }
+$slog = "logs\sync-prs-run-$(Get-Date -Format 'MMdd-HHmm').log"
+Start-Process powershell -WindowStyle Hidden -ArgumentList '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', 'scripts\sync-prs.ps1' -RedirectStandardOutput $slog -RedirectStandardError "$slog.err" -WorkingDirectory $root
+Write-Host "  started sync-prs.ps1 in the background -> $slog"
