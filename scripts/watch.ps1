@@ -5,9 +5,18 @@ $root = Split-Path $PSScriptRoot -Parent
 Set-Location $root
 New-Item -ItemType Directory -Force logs | Out-Null
 $log = "logs\watch-$(Get-Date -Format 'yyyyMMdd').log"
+# Output goes through FILES, not a pipe: the watcher starts run-todo/sync-prs in the background, they
+# inherit its handles, and a pipe would then stay open (and this task "running") for hours.
+$tmp = "logs\watch-run.out"
 try {
-  $out = @(& powershell -NoProfile -ExecutionPolicy Bypass -File scripts\sync-if-needed.ps1 2>&1 | ForEach-Object { "$_" })
-  if ($LASTEXITCODE) { $out += "exit code $LASTEXITCODE" }
+  $p = Start-Process powershell -PassThru -WindowStyle Hidden -WorkingDirectory $root `
+    -ArgumentList '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', 'scripts\sync-if-needed.ps1' `
+    -RedirectStandardOutput $tmp -RedirectStandardError "$tmp.err"
+  if (-not $p.WaitForExit(240000)) { Stop-Process -Id $p.Id -Force; $out = @('watcher timed out after 4 min') }
+  else {
+    $out = @(Get-Content -Encoding UTF8 $tmp, "$tmp.err" -ErrorAction SilentlyContinue | Where-Object { $_ })
+    if ($p.ExitCode) { $out += "exit code $($p.ExitCode)" }
+  }
 } catch { $out = @("watcher failed: $_") }
 $quiet = ($out.Count -eq 1 -and $out[0] -eq 'no conflicting agent PRs')
 # A waiting state ("lanes all busy", "dev settling") repeats every minute; log it once, not 60 times an hour.

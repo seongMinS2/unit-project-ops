@@ -237,9 +237,13 @@ switch ($Command) {
     # issue then starts a second fix on a branch that already holds the finished, verified work — and
     # that retry cannot even push (no force push), so it fails and re-queues forever.
     $openHeads = @(Get-All "/repos/$owner/$Repo/pulls?state=open" | ForEach-Object { $_.head.ref })
+    # Only the LATEST PR of a branch speaks for it. #113 (closed for a conflict) was re-handled as a
+    # rejection after its successor #115 was merged, re-queueing an issue that was already done.
+    $allPrs = @(Get-All "/repos/$owner/$Repo/pulls?state=all")
     $done = @()
     foreach ($p in $closed) {
       if ($openHeads -contains $p.head.ref) { continue }
+      if ($allPrs | Where-Object { $_.head.ref -eq $p.head.ref -and $_.number -gt $p.number }) { continue }
       # Just closed: the reason comment often follows the close by a few seconds.
       if (([datetime]$p.closed_at) -gt (Get-Date).AddMinutes(-$GraceMinutes)) { continue }
       $n =[int]([regex]::Match($p.head.ref, '^agent/issue-(\d+)$').Groups[1].Value)
