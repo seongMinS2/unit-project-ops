@@ -11,9 +11,11 @@
 param(
   [Parameter(Mandatory = $true)][string]$LaneSpec,
   [int]$MaxLanes = 5,          # each lane runs Gradle; 5 fits 28 cores / 32 GB (see the RAM check below)
-  [int]$TimeoutHours = 6       # a lane that outlives this is killed so the lock cannot be held forever
+  [int]$TimeoutHours = 6,      # a lane that outlives this is killed so the lock cannot be held forever
+  [string]$LaunchedFlag        # written once every lane process is running (run-todo then releases its lock)
 )
 $ErrorActionPreference = 'Stop'
+[Console]::OutputEncoding = [Text.Encoding]::UTF8   # its log is read back as UTF-8 by run-todo
 $root = Split-Path $PSScriptRoot -Parent
 Set-Location $root
 $Lanes = @($LaneSpec -split ';' | ForEach-Object { $_.Trim() } | Where-Object { $_ })
@@ -42,8 +44,9 @@ foreach ($lane in $Lanes) {
     -RedirectStandardOutput $log -RedirectStandardError "$log.err"
   $runs += [pscustomobject]@{ name = "lane$i"; proc = $p; log = $log }
   Write-Host "lane$i (PID $($p.Id)) 시작: #$($nums -join ' → #')"
-  Start-Sleep -Seconds 20   # stagger so the lanes don't all fetch/create worktrees at the same instant
+  if ($i -lt $Lanes.Count) { Start-Sleep -Seconds 20 }   # stagger so the lanes don't all fetch/create worktrees at the same instant
 }
+if ($LaunchedFlag) { Set-Content $LaunchedFlag (Get-Date).ToString('o') }
 
 $deadline = (Get-Date).AddHours($TimeoutHours)
 foreach ($r in $runs) {

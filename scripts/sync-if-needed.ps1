@@ -40,12 +40,12 @@ if ($toClose.Count -gt 0) {
 }
 
 # 2. issues handed to the agents with agent:todo — start a run in the background (it can take hours,
-#    so this watcher must not wait for it; run-todo.ps1 holds its own lock against a second start).
-$todo = @(Gitea issue-list -Labels 'agent:todo' | ForEach-Object { $_ } | Where-Object { $_.number })
-if ($todo.Count -gt 0) {
-  Write-Host "agent:todo: #$(($todo | ForEach-Object number) -join ', #')"
-  if (Test-LockHeld 'logs\run-todo.lock') { Write-Host '  run-todo already running, skipping' }
-  elseif (Test-LockHeld 'logs\sync-prs.lock') { Write-Host '  sync-prs running, todo waits for the next check' }
+#    so this watcher must not wait for it). Batches run side by side: run-todo.ps1 locks only while it
+#    plans, skips issues already in a running lane, and exits without a model call when nothing is new.
+$todo = @(Gitea issue-list -Labels 'agent:todo' | ForEach-Object { $_ } | Where-Object { $_.number -and -not (@($_.labels) -match '^agent:(in-progress|pr-open)$') })
+if ($todo.Count -gt 0 -and -not (Test-LockHeld 'logs\run-todo.lock')) {   # locked = a batch is being planned now
+  $check = @(powershell -NoProfile -ExecutionPolicy Bypass -File scripts\run-todo.ps1 -CheckOnly | ForEach-Object { "$_" })
+  if ($check[-1] -ne 'GO') { Write-Host "agent:todo: $($check -join ' ')" }
   elseif ($DryRun) { Write-Host '  would start run-todo.ps1' }
   else {
     $log = "logs\run-todo-$(Get-Date -Format 'MMdd-HHmm').log"

@@ -10,6 +10,11 @@ try {
   if ($LASTEXITCODE) { $out += "exit code $LASTEXITCODE" }
 } catch { $out = @("watcher failed: $_") }
 $quiet = ($out.Count -eq 1 -and $out[0] -eq 'no conflicting agent PRs')
-if (-not $quiet) {
-  Add-Content -Encoding UTF8 $log ("[$(Get-Date -Format 'HH:mm:ss')] " + ($out -join "`r`n           "))
+# A waiting state ("lanes all busy", "dev settling") repeats every minute; log it once, not 60 times an hour.
+$text = $out -join "`r`n           "
+$lastFile = 'logs\watch-last.txt'
+$last = if (Test-Path $lastFile) { [IO.File]::ReadAllText((Resolve-Path $lastFile)) } else { '' }
+if (-not $quiet -and $text -ne $last) {
+  Add-Content -Encoding UTF8 $log ("[$(Get-Date -Format 'HH:mm:ss')] " + $text)
 }
+[IO.File]::WriteAllText((Join-Path $root $lastFile), $text)

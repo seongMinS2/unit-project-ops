@@ -9,7 +9,9 @@ description: unit-project에서 agent:todo 라벨이 붙은(사람이 에이전�
 
 ## 1. 대상
 
-- 인자로 번호가 오면 그 이슈들이 대상입니다.
+- 인자로 번호가 오면 그 이슈들이 대상입니다. `run-todo.ps1`은 `/plan-todo 112 111 110 --max-lanes 4 --in-flight 44,45` 형식으로 부릅니다.
+  - `--max-lanes N`: 이번 계획에 쓸 수 있는 레인 수입니다(앞 회차 레인이 나머지를 쓰고 있음). 없으면 5입니다.
+  - `--in-flight`: **다른 레인이 지금 처리 중인** 이슈입니다. 계획에 넣지 않습니다. 대신 `issue-get`으로 읽고 영향 범위를 추정해서, 대상 이슈 중 그 범위와 파일이 겹치는 이슈는 `deferred`로 보냅니다. 동시에 고치면 PR끼리 충돌하기 때문입니다. 진행 중인 레인이 끝나면 다음 회차에 다시 계획됩니다.
 - 인자가 없으면 `gitea` 스킬로 `issue-list -Labels agent:todo`를 실행해 열린 이슈를 가져옵니다.
 - `agent:in-progress`, `agent:pr-open`이 함께 붙은 이슈는 이미 처리 중이므로 `skipped`로 보냅니다.
 - `agent:blocked`와 `agent:todo`가 **함께** 붙어 있으면 사람이 답을 주고 다시 맡긴 것입니다. 건너뛰지 말고 **포함**하세요(착수할 때 `agent:blocked`는 자동으로 제거됩니다). 막혔던 질문에 대한 답이 코멘트에 있으니, 그 이슈를 맡는 세션은 코멘트를 끝까지 읽어야 합니다.
@@ -25,7 +27,7 @@ description: unit-project에서 agent:todo 라벨이 붙은(사람이 에이전�
 
 - 추정한 파일이 하나라도 겹치거나, 같은 도메인의 같은 계층(api/core/infra)을 크게 바꾸는 이슈끼리는 **같은 레인**에 넣습니다. 순서는 심각도가 높은 것부터이고, 같으면 번호순입니다.
 - 공용 영역을 건드리는 이슈끼리도 같은 레인에 넣습니다.
-- 레인은 **최대 5개**입니다. 레인이 더 필요하면 가장 짧은 레인 뒤에 이어 붙입니다. 실행기가 여유 메모리를 보고 필요하면 레인을 합치므로, 여기서는 "겹치지 않으면 나눈다"는 기준만 지키면 됩니다.
+- 레인은 **최대 5개**(`--max-lanes`가 있으면 그 수)입니다. 레인이 더 필요하면 가장 짧은 레인 뒤에 이어 붙입니다. 실행기가 여유 메모리를 보고 필요하면 레인을 합치므로, 여기서는 "겹치지 않으면 나눈다"는 기준만 지키면 됩니다.
 - 한 번 실행에 처리할 이슈는 최대 12개입니다. 나머지는 `deferred`로 보내 다음 실행에서 처리합니다.
 
 ## 4. 출력
@@ -35,6 +37,6 @@ description: unit-project에서 agent:todo 라벨이 붙은(사람이 에이전�
 {"lanes": [[36, 40], [35]],
  "reasons": {"36": "infax/api InfaxQueryController", "40": "infax/api 같은 컨트롤러라 #36 뒤", "35": "doctransfer + chat/ws + 프론트 알림"},
  "skipped": [{"issue": 12, "reason": "agent:pr-open"}],
- "deferred": []}
+ "deferred": [{"issue": 41, "reason": "진행 중인 #44 와 InfaxQueryController 겹침"}]}
 ```
 대상이 없으면 `{"lanes": [], "reasons": {}, "skipped": [], "deferred": []}`를 출력합니다.

@@ -21,4 +21,9 @@ function Test-LockHeld([string]$File, [double]$MaxHours = 3) {
 }
 
 function Set-Lock([string]$File) { Set-Content $File "$PID|$((Get-Date).ToString('o'))" }
-function Clear-Lock([string]$File) { Remove-Item $File -ErrorAction SilentlyContinue }
+# Only the holder may clear: run-todo releases its lock early, and a later `finally` must not delete
+# the lock a newer run has taken since.
+function Clear-Lock([string]$File) {
+  $owner = ((Get-Content $File -ErrorAction SilentlyContinue) -split '\|')[0]
+  if ($owner -eq "$PID") { Remove-Item $File -ErrorAction SilentlyContinue }
+}
