@@ -1,0 +1,5 @@
+목록 빈 상태 안내 공통화 — 영역 가운데 표시, 아래 구분선 제거
+
+Refs #217
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>

@@ -1,0 +1,5 @@
+목록 표 공통 정렬(머리글 가운데·짧은 값 가운데·긴 글 왼쪽·양끝 여백)과 팝업 목록 배경 틴트 제거
+
+Refs #206
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>

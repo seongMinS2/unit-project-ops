@@ -1,0 +1,5 @@
+채팅 뒤로가기 시 방 닫기, 참여자 선택에 프로젝트 사용자 전체 선택 추가, 헤더 라벨 접기를 대화창 폭 기준으로
+
+Refs #185
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>

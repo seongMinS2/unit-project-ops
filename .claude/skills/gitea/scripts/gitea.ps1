@@ -21,6 +21,7 @@
     gitea.ps1 close-merged  [-DryRun]           (close issues whose agent/issue-N PR was merged)
     gitea.ps1 handle-rejected [-DryRun] [-GraceMinutes 2]  (PR closed unmerged -> copy reason to issue, re-queue or block)
     gitea.ps1 pr-feedback [-GraceMinutes 2]     (open agent PRs with human comments not yet answered)
+    gitea.ps1 promote-waiting [-DryRun]         (agent:waiting + "선행 이슈: #a, #b" all closed -> agent:todo)
       -GraceMinutes: ignore PRs closed / commented less than N minutes ago — the human may still be typing
 #>
 param(
@@ -184,6 +185,28 @@ switch ($Command) {
     Out-Json @(Get-All "/repos/$owner/$Repo/pulls?state=$State" | ForEach-Object {
       @{ number = $_.number; title = $_.title; head = $_.head.ref; base = $_.base.ref; url = $_.html_url; merged = $_.merged; mergeable = $_.mergeable }
     })
+  }
+  'promote-waiting' {
+    # Issues parked with agent:waiting carry a line "선행 이슈: #12, #34" in their body. Once every one
+    # of those is closed, swap agent:waiting for agent:todo so the watcher starts them — the human no
+    # longer has to remember "after #12 merges, label #56". No prerequisite line = never promoted.
+    $done = @()
+    foreach ($i in @(Get-All "/repos/$owner/$Repo/issues?type=issues&state=open&labels=agent%3Awaiting")) {
+      $line = [regex]::Match([string]$i.body, '선행\s*이슈\s*[:：]\s*([^\r\n]+)')
+      if (-not $line.Success) { continue }
+      $deps = @([regex]::Matches($line.Groups[1].Value, '#(\d+)') | ForEach-Object { [int]$_.Groups[1].Value } | Sort-Object -Unique)
+      if ($deps.Count -eq 0) { continue }
+      $open = @($deps | Where-Object { (Invoke-Gitea GET "/repos/$owner/$Repo/issues/$_").state -ne 'closed' })
+      if ($open.Count) { continue }
+      if (-not $DryRun) {
+        $byName = @{}; Get-All "/repos/$owner/$Repo/labels" | ForEach-Object { $byName[$_.name] = $_.id }
+        try { Invoke-Gitea DELETE "/repos/$owner/$Repo/issues/$($i.number)/labels/$($byName['agent:waiting'])" | Out-Null } catch { }
+        Invoke-Gitea POST "/repos/$owner/$Repo/issues/$($i.number)/labels" @{ labels = @([int64]$byName['agent:todo']) } | Out-Null
+        Invoke-Gitea POST "/repos/$owner/$Repo/issues/$($i.number)/comments" @{ body = "선행 이슈 $(($deps | ForEach-Object { "#$_" }) -join ', ') 가 모두 닫혀 ``agent:todo`` 로 넘깁니다(자동)." } | Out-Null
+      }
+      $done += [pscustomobject]@{ issue = $i.number; deps = $deps }
+    }
+    Out-Json @{ dryRun = [bool]$DryRun; promoted = $done }
   }
   'close-merged' {
     # Close issues whose agent PR (head agent/issue-N) has been merged by a human.

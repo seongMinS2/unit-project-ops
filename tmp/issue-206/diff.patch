@@ -1,0 +1,379 @@
+﻿diff --git a/src/main/resources/static/assets/app/document/document-editor.js b/src/main/resources/static/assets/app/document/document-editor.js
+index 3ba9ece..18b5dda 100644
+--- a/src/main/resources/static/assets/app/document/document-editor.js
++++ b/src/main/resources/static/assets/app/document/document-editor.js
+@@ -573,10 +573,10 @@ jQuery(function ($) {
+ 	function tplRowHtml(item) {
+ 		return '<tr class="cursor-pointer" data-template-id="' + tplEsc(item.documentFormId) +
+ 			'" data-template-name="' + tplEsc(item.formName) + '">' +
+-			'<td>' + tplEsc(item.formName) + '</td>' +
+-			'<td>' + tplEsc(item.description) + '</td>' +
+-			'<td>' + tplEsc(item.formFormat) + '</td>' +
+-			'<td>' + tplFormatDate(item.modDate || item.regDate) + '</td>' +
++			'<td class="cell-text">' + tplEsc(item.formName) + '</td>' +
++			'<td class="cell-text">' + tplEsc(item.description) + '</td>' +
++			'<td class="cell-center">' + tplEsc(item.formFormat) + '</td>' +
++			'<td class="cell-center">' + tplFormatDate(item.modDate || item.regDate) + '</td>' +
+ 			'</tr>';
+ 	}
+ 
+diff --git a/src/main/resources/static/assets/app/send/sendFax.js b/src/main/resources/static/assets/app/send/sendFax.js
+index 6b18405..5f29484 100644
+--- a/src/main/resources/static/assets/app/send/sendFax.js
++++ b/src/main/resources/static/assets/app/send/sendFax.js
+@@ -271,9 +271,9 @@ jQuery(function ($) {
+     var hasNum = !!digitsOnly(number);   // 팩스번호 없으면 선택 불가(체크박스 비활성)
+     return '<tr data-name="' + esc(name) + '" data-number="' + esc(number) + '"' + (hasNum ? '' : ' class="is-nonum"') + '>' +
+       '<td><input class="form-check-input m-0 align-middle check" type="checkbox"' + (hasNum ? '' : ' disabled aria-label="팩스번호 없음"') + '></td>' +
+-      '<td>' + esc(id) + '</td>' +
+-      '<td>' + esc(name) + '</td>' +
+-      '<td>' + esc(number) + '</td>' +
++      '<td class="cell-text">' + esc(id) + '</td>' +
++      '<td class="cell-text">' + esc(name) + '</td>' +
++      '<td class="cell-center">' + esc(number) + '</td>' +
+       '</tr>';
+   }
+   function abFill($body, $footer, rows, total) {
+diff --git a/src/main/resources/static/assets/app/system/system-basic.js b/src/main/resources/static/assets/app/system/system-basic.js
+index 31d3f78..0e608e8 100644
+--- a/src/main/resources/static/assets/app/system/system-basic.js
++++ b/src/main/resources/static/assets/app/system/system-basic.js
+@@ -163,7 +163,7 @@ jQuery(function ($) {
+     return '<span class="assign-tag' + (off ? ' is-off' : '') + '">' + (off ? '사용안함' : '사용') + '</span>';
+   }
+   function toolsHtml() {
+-    return '<td><div class="cell-tools">' +
++    return '<td class="cell-center"><div class="cell-tools">' +
+       '<button type="button" data-row-action="update" title="수정" aria-label="수정">' + icon('edit', 15) + '</button>' +
+       '<button type="button" class="cell-tool-danger" data-row-action="delete" title="삭제" aria-label="삭제">' + icon('trash', 15) + '</button>' +
+       '</div></td>';
+@@ -186,10 +186,10 @@ jQuery(function ($) {
+     var id = str(item.basicValueGroupId);
+     return '' +
+       '<tr data-group-id="' + esc(id) + '"' + (id === selectedGroupId ? ' class="is-selected"' : '') + '>' +
+-      '<td><button type="button" class="cell-link" data-group-pick>' + esc(id) + '</button></td>' +
+-      '<td>' + esc(item.basicValueGroupName) + '</td>' +
+-      '<td>' + esc(item.basicValueGroupComment) + '</td>' +
+-      '<td >' + useHtml(item.useFlag) + '</td>' +
++      '<td class="cell-center"><button type="button" class="cell-link" data-group-pick>' + esc(id) + '</button></td>' +
++      '<td class="cell-text">' + esc(item.basicValueGroupName) + '</td>' +
++      '<td class="cell-text">' + esc(item.basicValueGroupComment) + '</td>' +
++      '<td class="cell-center">' + useHtml(item.useFlag) + '</td>' +
+       toolsHtml() +
+       '</tr>';
+   }
+@@ -257,12 +257,12 @@ jQuery(function ($) {
+       '<tr data-value-key="' + esc(item.basicValueKey) + '" data-group-id="' + esc(item.basicValueGroupId) + '"' +
+       ' data-value="' + esc(item.basicValue) + '" data-value-comment="' + esc(item.basicValueComment) + '"' +
+       ' data-value-order="' + esc(item.basicValueOrder) + '" data-use-flag="' + esc(item.useFlag) + '">' +
+-      '<td>' + esc(item.basicValueGroupId) + '</td>' +
+-      '<td>' + esc(item.basicValueKey) + '</td>' +
+-      '<td>' + esc(item.basicValue) + '</td>' +
+-      '<td>' + esc(item.basicValueComment) + '</td>' +
+-      '<td >' + esc(item.basicValueOrder) + '</td>' +
+-      '<td >' + useHtml(item.useFlag) + '</td>' +
++      '<td class="cell-center">' + esc(item.basicValueGroupId) + '</td>' +
++      '<td class="cell-text">' + esc(item.basicValueKey) + '</td>' +
++      '<td class="cell-text">' + esc(item.basicValue) + '</td>' +
++      '<td class="cell-text">' + esc(item.basicValueComment) + '</td>' +
++      '<td class="cell-center">' + esc(item.basicValueOrder) + '</td>' +
++      '<td class="cell-center">' + useHtml(item.useFlag) + '</td>' +
+       toolsHtml() +
+       '</tr>';
+   }
+diff --git a/src/main/resources/static/assets/app/system/system-code.js b/src/main/resources/static/assets/app/system/system-code.js
+index 5b8fbef..b6b47a3 100644
+--- a/src/main/resources/static/assets/app/system/system-code.js
++++ b/src/main/resources/static/assets/app/system/system-code.js
+@@ -162,7 +162,7 @@ jQuery(function ($) {
+     return '<span class="assign-tag' + (off ? ' is-off' : '') + '">' + (off ? '사용안함' : '사용') + '</span>';
+   }
+   function toolsHtml() {
+-    return '<td><div class="cell-tools">' +
++    return '<td class="cell-center"><div class="cell-tools">' +
+       '<button type="button" data-row-action="update" title="수정" aria-label="수정">' + icon('edit', 15) + '</button>' +
+       '<button type="button" class="cell-tool-danger" data-row-action="delete" title="삭제" aria-label="삭제">' + icon('trash', 15) + '</button>' +
+       '</div></td>';
+@@ -185,10 +185,10 @@ jQuery(function ($) {
+     var id = str(item.codeGroupId);
+     return '' +
+       '<tr data-group-id="' + esc(id) + '"' + (id === selectedGroupId ? ' class="is-selected"' : '') + '>' +
+-      '<td><button type="button" class="cell-link" data-group-pick>' + esc(id) + '</button></td>' +
+-      '<td>' + esc(item.codeGroupName) + '</td>' +
+-      '<td>' + esc(item.codeGroupComment) + '</td>' +
+-      '<td >' + useHtml(item.useFlag) + '</td>' +
++      '<td class="cell-center"><button type="button" class="cell-link" data-group-pick>' + esc(id) + '</button></td>' +
++      '<td class="cell-text">' + esc(item.codeGroupName) + '</td>' +
++      '<td class="cell-text">' + esc(item.codeGroupComment) + '</td>' +
++      '<td class="cell-center">' + useHtml(item.useFlag) + '</td>' +
+       toolsHtml() +
+       '</tr>';
+   }
+@@ -256,12 +256,12 @@ jQuery(function ($) {
+       '<tr data-code-id="' + esc(item.codeId) + '" data-code-group-id="' + esc(item.codeGroupId) + '"' +
+       ' data-code-name="' + esc(item.codeName) + '" data-code-comment="' + esc(item.codeComment) + '"' +
+       ' data-code-order="' + esc(item.codeOrder) + '" data-use-flag="' + esc(item.useFlag) + '">' +
+-      '<td>' + esc(item.codeGroupId) + '</td>' +
+-      '<td>' + esc(item.codeId) + '</td>' +
+-      '<td>' + esc(item.codeName) + '</td>' +
+-      '<td>' + esc(item.codeComment) + '</td>' +
+-      '<td >' + esc(item.codeOrder) + '</td>' +
+-      '<td >' + useHtml(item.useFlag) + '</td>' +
++      '<td class="cell-center">' + esc(item.codeGroupId) + '</td>' +
++      '<td class="cell-center">' + esc(item.codeId) + '</td>' +
++      '<td class="cell-text">' + esc(item.codeName) + '</td>' +
++      '<td class="cell-text">' + esc(item.codeComment) + '</td>' +
++      '<td class="cell-center">' + esc(item.codeOrder) + '</td>' +
++      '<td class="cell-center">' + useHtml(item.useFlag) + '</td>' +
+       toolsHtml() +
+       '</tr>';
+   }
+diff --git a/src/main/resources/static/assets/common/css/gfax-tabler.css b/src/main/resources/static/assets/common/css/gfax-tabler.css
+index 095d11a..c43c4d1 100644
+--- a/src/main/resources/static/assets/common/css/gfax-tabler.css
++++ b/src/main/resources/static/assets/common/css/gfax-tabler.css
+@@ -1469,6 +1469,16 @@ body.is-editor-fs .gfax-sheet { margin: 0; border-radius: 0; }
+   padding-inline: .5rem;   /* 흰 판이 상자 벽에 붙지 않게 */
+ }
+ 
++/* 이슈 #206 코멘트 — 팝업(모달) 안의 .gfax-inset 은 틴트 면이 아니라 모달과 같은 바탕이다.
++   참여자 선택(owner-picker)·받는사람 추가(address-book)처럼 트리·목록·선택 칸을 나란히 두는
++   팝업에서 틴트 판 + 흰 행 + 모달 바탕이 세 겹으로 대비돼 촌스럽던 것을 없앤다.
++   영역 구분은 칠이 아니라 얇은 선으로만 한다 — 둥근 모서리는 그대로 둔다.
++   ⚠️ 페이지 본문의 .gfax-inset(팩스보내기 받는사람 표 등)은 이번 범위가 아니라 `.modal` 로 한정한다. */
++.modal .gfax-inset {
++  background: var(--tblr-bg-surface);
++  border: var(--tblr-border-width) solid var(--gfax-line-soft);
++}
++
+ /* 틴트 상자 안의 표 — 상자를 연한 파랑으로 채운 뒤 표를 그대로 두면 줄이 배경에 묻혀
+    목록으로 안 읽힌다. 그래서 목록 전체를 **한 장의 흰 판**으로 띄운다.
+ 
+@@ -2044,6 +2054,38 @@ tr.is-selected .cell-link { font-weight: 600; }
+ }
+ .gfax-shell .page-body.is-list .table-responsive .table thead th { background: var(--gfax-thead-bg); }
+ 
++/* ---------- 이슈 #206 — 목록 표 공통 정렬: 머리글은 항상 가운데 ----------
++   목록 화면·모달 어느 쪽이든, `.table-responsive` 로 감쌌든 아니든(owner-picker·주소록 picker 처럼
++   `.gfax-inset` 안에 표만 바로 둔 경우도 있다) 머리글은 가운데로 맞춘다.
++   ⚠️ 정렬 트리거가 있는 열(system-code.js 등의 `.xxx-column-menu` 버튼, `data-sort-indicator`)은
++      버튼 자체가 `display:inline-flex` 라 th 의 text-align 을 따라 통째로 가운데로 밀린다 —
++      화살표가 글자에서 떨어지지 않는다. */
++.table thead th { text-align: center; }
++
++/* ---------- 이슈 #206 — 본문 셀 정렬 유틸리티 ----------
++   머리글과 달리 본문은 열의 값 성격에 따라 갈린다 — 짧은 값(코드·순서·상태 배지·건수 등)은
++   가운데, 긴 글(이름·설명·제목·메모·주소 등)은 왼쪽. 표마다 해당 th/td(또는 JS 가 그리는 셀)에
++   붙인다. `.text-end` 숫자 정렬처럼 이미 오른쪽 정렬이 필요한 열은 그대로 둔다. */
++.table th.cell-center,
++.table td.cell-center { text-align: center; }
++.table th.cell-text,
++.table td.cell-text { text-align: left; }
++
++/* 코드 목록·코드그룹, 기준값 목록·그룹 — "관리" 열을 오른쪽 끝(.cell-tools 기본값)이 아니라
++   가운데로 모은다(이슈 #206, 짧은 값 열은 가운데). `.cell-tools` 는 다른 화면(미리보기·다운로드
++   등 오른쪽 정렬이 맞는 표)에도 쓰여 전역으로 바꾸지 않고 이 네 표에만 한정한다. */
++#paneCodeGroup .cell-tools,
++#m-code-list .cell-tools,
++#paneBaseGroup .cell-tools,
++#m-base-value-list .cell-tools { justify-content: center; }
++
++/* ---------- 이슈 #206 — 표 좌우 여백 ----------
++   첫 열 글자·마지막 열 글자가 표 테두리(또는 둥근 머리글 캡슐)에 붙지 않게 여백을 준다.
++   `table-sm`(모달 표 대부분)은 기본 셀 패딩이 .25rem 으로 좁아 답답했다 — 조금 늘린다. */
++.table-sm > :not(caption) > * > * { padding: .375rem .625rem; }
++.table > :not(caption) > * > *:first-child { padding-left: .875rem; }
++.table > :not(caption) > * > *:last-child { padding-right: .875rem; }
++
+ /* ---------- 9-1) 시안 26 세부 (캡슐 · 채움 입력 · 캡슐 표 머리글) ---------- */
+ 
+ /* 입력칸 — 테두리 없이 **연한 파랑으로 채운다**. 포커스에서만 테두리가 선다.
+@@ -2792,6 +2834,17 @@ tr[data-depth="0"] .tree-cell .tree-caret.is-leaf::before { display: none; }
+ .pager-row > :last-child { grid-column: 3; justify-self: end; }   /* 총 N건 */
+ .pager-row .pager-side { grid-column: 3; justify-self: end; display: flex; align-items: center; gap: .5rem; }
+ 
++/* 이슈 #206 코멘트 — 참여자 선택(owner-picker)의 사용자 목록처럼 칸이 좁은 .pager-row 전용.
++   "총 N건 · 프로젝트명" 처럼 건수 옆에 범위까지 붙으면 1fr 칸에 눌려 여러 줄로 꺾인다
++   (opMemberFooter). 페이저와 건수를 위아래로 나눠 한 줄씩만 쓰게 한다. */
++.pager-row.pager-row-narrow { grid-template-columns: 1fr; row-gap: .25rem; }
++.pager-row.pager-row-narrow > .pagination,
++.pager-row.pager-row-narrow > :last-child {
++  grid-column: 1;
++  justify-self: center;
++  white-space: nowrap;
++}
++
+ /* ---------- 껍데기 없는 버튼 ----------
+    ⚠️ Bootstrap 의 reboot 는 <button> 의 **브라우저 기본 외형(테두리·회색 배경·패딩)을 지우지 않는다.**
+       자체 CSS 시절엔 우리 규칙이 그걸 눌러 줬는데, 그 CSS 를 걷어내면서 `.btn` 이 없는 버튼
+diff --git a/src/main/resources/static/assets/common/js/owner-picker.js b/src/main/resources/static/assets/common/js/owner-picker.js
+index 8e46eb2..966d345 100644
+--- a/src/main/resources/static/assets/common/js/owner-picker.js
++++ b/src/main/resources/static/assets/common/js/owner-picker.js
+@@ -118,9 +118,9 @@
+     return '<tr data-op-type="' + esc(type) + '" data-op-id="' + esc(id) + '" data-op-name="' + esc(name) + '"' +
+       (picked ? ' class="is-picked"' : '') + '>' +
+       '<td><input class="form-check-input m-0 align-middle check" type="checkbox"' + (picked ? ' checked' : '') + '></td>' +
+-      '<td>' + esc(id) + '</td>' +
+-      '<td>' + esc(name) + '</td>' +
+-      (extraCell == null ? '' : '<td>' + esc(extraCell) + '</td>') +
++      '<td class="cell-center">' + esc(id) + '</td>' +
++      '<td class="cell-text">' + esc(name) + '</td>' +
++      (extraCell == null ? '' : '<td class="cell-center">' + esc(extraCell) + '</td>') +
+       '</tr>';
+   }
+   function fill($body, $footer, rows, total, colspan) {
+diff --git a/src/main/resources/templates/app/document/document-editor.html b/src/main/resources/templates/app/document/document-editor.html
+index 33efd83..fdd0890 100644
+--- a/src/main/resources/templates/app/document/document-editor.html
++++ b/src/main/resources/templates/app/document/document-editor.html
+@@ -230,10 +230,10 @@
+               <table class="table table-vcenter table-sm m-0">
+                 <thead>
+                 <tr>
+-                  <th>서식명</th>
+-                  <th>설명</th>
+-                  <th>형식</th>
+-                  <th>수정일</th>
++                  <th class="cell-text">서식명</th>
++                  <th class="cell-text">설명</th>
++                  <th class="cell-center">형식</th>
++                  <th class="cell-center">수정일</th>
+                 </tr>
+                 </thead>
+                 <tbody id="tplBody">
+diff --git a/src/main/resources/templates/app/system/system-basic.html b/src/main/resources/templates/app/system/system-basic.html
+index f43f3e0..9999834 100644
+--- a/src/main/resources/templates/app/system/system-basic.html
++++ b/src/main/resources/templates/app/system/system-basic.html
+@@ -78,11 +78,11 @@
+         <table data-columns-managed class="system-basic-columns-table table table-vcenter card-table">
+           <thead>
+             <tr>
+-              <th data-column="basicValueGroupId" data-sort-field="basicValueGroupId"><button type="button" class="system-basic-column-menu" data-column-menu aria-haspopup="dialog" aria-label="그룹 컬럼 메뉴">그룹<span data-sort-indicator aria-hidden="true">▾</span></button></th>
+-              <th data-column="basicValueGroupName" data-sort-field="basicValueGroupName"><button type="button" class="system-basic-column-menu" data-column-menu aria-haspopup="dialog" aria-label="그룹명 컬럼 메뉴">그룹명<span data-sort-indicator aria-hidden="true">▾</span></button></th>
+-              <th data-column="basicValueGroupComment" data-sort-field="basicValueGroupComment"><button type="button" class="system-basic-column-menu" data-column-menu aria-haspopup="dialog" aria-label="그룹설명 컬럼 메뉴">그룹설명<span data-sort-indicator aria-hidden="true">▾</span></button></th>
+-              <th class="cell-tight" data-column="useFlag" data-sort-field="useFlag"><button type="button" class="system-basic-column-menu" data-column-menu aria-haspopup="dialog" aria-label="사용여부 컬럼 메뉴">사용여부<span data-sort-indicator aria-hidden="true">▾</span></button></th>
+-              <th class="text-end">관리</th>
++              <th class="cell-center" data-column="basicValueGroupId" data-sort-field="basicValueGroupId"><button type="button" class="system-basic-column-menu" data-column-menu aria-haspopup="dialog" aria-label="그룹 컬럼 메뉴">그룹<span data-sort-indicator aria-hidden="true">▾</span></button></th>
++              <th class="cell-text" data-column="basicValueGroupName" data-sort-field="basicValueGroupName"><button type="button" class="system-basic-column-menu" data-column-menu aria-haspopup="dialog" aria-label="그룹명 컬럼 메뉴">그룹명<span data-sort-indicator aria-hidden="true">▾</span></button></th>
++              <th class="cell-text" data-column="basicValueGroupComment" data-sort-field="basicValueGroupComment"><button type="button" class="system-basic-column-menu" data-column-menu aria-haspopup="dialog" aria-label="그룹설명 컬럼 메뉴">그룹설명<span data-sort-indicator aria-hidden="true">▾</span></button></th>
++              <th class="cell-tight cell-center" data-column="useFlag" data-sort-field="useFlag"><button type="button" class="system-basic-column-menu" data-column-menu aria-haspopup="dialog" aria-label="사용여부 컬럼 메뉴">사용여부<span data-sort-indicator aria-hidden="true">▾</span></button></th>
++              <th class="cell-center">관리</th>
+             </tr>
+           </thead>
+           <tbody id="baseGroupBody">
+diff --git a/src/main/resources/templates/app/system/system-code.html b/src/main/resources/templates/app/system/system-code.html
+index 5c0e1ed..b2d3650 100644
+--- a/src/main/resources/templates/app/system/system-code.html
++++ b/src/main/resources/templates/app/system/system-code.html
+@@ -78,11 +78,11 @@
+         <table data-columns-managed class="system-code-columns-table table table-vcenter card-table">
+           <thead>
+             <tr>
+-              <th data-column="codeGroupId" data-sort-field="codeGroupId"><button type="button" class="system-code-column-menu" data-column-menu aria-haspopup="dialog" aria-label="코드그룹 컬럼 메뉴">코드그룹<span data-sort-indicator aria-hidden="true">▾</span></button></th>
+-              <th data-column="codeGroupName" data-sort-field="codeGroupName"><button type="button" class="system-code-column-menu" data-column-menu aria-haspopup="dialog" aria-label="코드그룹명 컬럼 메뉴">코드그룹명<span data-sort-indicator aria-hidden="true">▾</span></button></th>
+-              <th data-column="codeGroupComment" data-sort-field="codeGroupComment"><button type="button" class="system-code-column-menu" data-column-menu aria-haspopup="dialog" aria-label="코드그룹설명 컬럼 메뉴">코드그룹설명<span data-sort-indicator aria-hidden="true">▾</span></button></th>
+-              <th class="cell-tight" data-column="useFlag" data-sort-field="useFlag"><button type="button" class="system-code-column-menu" data-column-menu aria-haspopup="dialog" aria-label="사용여부 컬럼 메뉴">사용여부<span data-sort-indicator aria-hidden="true">▾</span></button></th>
+-              <th class="text-end">관리</th>
++              <th class="cell-center" data-column="codeGroupId" data-sort-field="codeGroupId"><button type="button" class="system-code-column-menu" data-column-menu aria-haspopup="dialog" aria-label="코드그룹 컬럼 메뉴">코드그룹<span data-sort-indicator aria-hidden="true">▾</span></button></th>
++              <th class="cell-text" data-column="codeGroupName" data-sort-field="codeGroupName"><button type="button" class="system-code-column-menu" data-column-menu aria-haspopup="dialog" aria-label="코드그룹명 컬럼 메뉴">코드그룹명<span data-sort-indicator aria-hidden="true">▾</span></button></th>
++              <th class="cell-text" data-column="codeGroupComment" data-sort-field="codeGroupComment"><button type="button" class="system-code-column-menu" data-column-menu aria-haspopup="dialog" aria-label="코드그룹설명 컬럼 메뉴">코드그룹설명<span data-sort-indicator aria-hidden="true">▾</span></button></th>
++              <th class="cell-tight cell-center" data-column="useFlag" data-sort-field="useFlag"><button type="button" class="system-code-column-menu" data-column-menu aria-haspopup="dialog" aria-label="사용여부 컬럼 메뉴">사용여부<span data-sort-indicator aria-hidden="true">▾</span></button></th>
++              <th class="cell-center">관리</th>
+             </tr>
+           </thead>
+           <tbody id="codeGroupBody">
+diff --git a/src/main/resources/templates/components/modals/address-book.html b/src/main/resources/templates/components/modals/address-book.html
+index af1466d..121ecbc 100644
+--- a/src/main/resources/templates/components/modals/address-book.html
++++ b/src/main/resources/templates/components/modals/address-book.html
+@@ -49,7 +49,7 @@
+                 <table class="table table-vcenter table-sm m-0">
+                   <thead><tr>
+                     <th class="cell-tight"><input class="form-check-input m-0 align-middle check ab-check-all" type="checkbox" data-list="abBookBody" aria-label="전체 선택"></th>
+-                    <th>그룹명</th><th>주소록명</th><th>팩스번호</th>
++                    <th class="cell-text">그룹명</th><th class="cell-text">주소록명</th><th class="cell-center">팩스번호</th>
+                   </tr></thead>
+                   <tbody id="abBookBody"></tbody>
+                 </table>
+diff --git a/src/main/resources/templates/components/modals/base-value-list.html b/src/main/resources/templates/components/modals/base-value-list.html
+index fbb8dd5..84076f4 100644
+--- a/src/main/resources/templates/components/modals/base-value-list.html
++++ b/src/main/resources/templates/components/modals/base-value-list.html
+@@ -72,13 +72,13 @@
+               <table class="table table-vcenter table-sm m-0">
+                 <thead>
+                   <tr>
+-                    <th>그룹</th>
+-                    <th>기준값명</th>
+-                    <th>값</th>
+-                    <th>설명</th>
+-                    <th class="cell-tight">순서</th>
+-                    <th class="cell-tight">사용여부</th>
+-                    <th class="text-end">관리</th>
++                    <th class="cell-center">그룹</th>
++                    <th class="cell-text">기준값명</th>
++                    <th class="cell-text">값</th>
++                    <th class="cell-text">설명</th>
++                    <th class="cell-tight cell-center">순서</th>
++                    <th class="cell-tight cell-center">사용여부</th>
++                    <th class="cell-center">관리</th>
+                   </tr>
+                 </thead>
+                 <tbody id="baseValueBody">
+diff --git a/src/main/resources/templates/components/modals/code-set-list.html b/src/main/resources/templates/components/modals/code-set-list.html
+index 8d77eeb..8b152ec 100644
+--- a/src/main/resources/templates/components/modals/code-set-list.html
++++ b/src/main/resources/templates/components/modals/code-set-list.html
+@@ -71,13 +71,13 @@
+               <table class="table table-vcenter table-sm m-0">
+                 <thead>
+                   <tr>
+-                    <th>코드그룹</th>
+-                    <th>코드</th>
+-                    <th>코드명</th>
+-                    <th>코드설명</th>
+-                    <th class="cell-tight">순서</th>
+-                    <th class="cell-tight">사용여부</th>
+-                    <th class="text-end">관리</th>
++                    <th class="cell-center">코드그룹</th>
++                    <th class="cell-center">코드</th>
++                    <th class="cell-text">코드명</th>
++                    <th class="cell-text">코드설명</th>
++                    <th class="cell-tight cell-center">순서</th>
++                    <th class="cell-tight cell-center">사용여부</th>
++                    <th class="cell-center">관리</th>
+                   </tr>
+                 </thead>
+                 <tbody id="codeBody">
+diff --git a/src/main/resources/templates/components/modals/owner-picker.html b/src/main/resources/templates/components/modals/owner-picker.html
+index b7bd2e8..beacd6f 100644
+--- a/src/main/resources/templates/components/modals/owner-picker.html
++++ b/src/main/resources/templates/components/modals/owner-picker.html
+@@ -76,12 +76,14 @@
+                 <table class="table table-vcenter table-sm m-0">
+                   <thead><tr>
+                     <th class="cell-tight"><input class="form-check-input m-0 align-middle check op-check-all" type="checkbox" data-list="opMemberBody" aria-label="전체 선택"></th>
+-                    <th>아이디</th><th>사용자명</th><th id="opMemberFaxHead">팩스번호</th>
++                    <th class="cell-center">아이디</th><th class="cell-text">사용자명</th><th class="cell-center" id="opMemberFaxHead">팩스번호</th>
+                   </tr></thead>
+                   <tbody id="opMemberBody"></tbody>
+                 </table>
+               </div>
+-              <div class="pager-row gap-2 mt-1">
++              <!-- pager-row-narrow: 이 칸은 col-lg-4 로 좁아, 프로젝트를 고르면 건수 옆에 프로젝트명까지
++                   붙는 opMemberFooter 가 여러 줄로 꺾인다(이슈 #206 코멘트) — 페이저 아래로 내린다. -->
++              <div class="pager-row pager-row-narrow gap-2 mt-1">
+                 <ul class="pagination pagination-sm m-0" id="opMemberPager"></ul>
+                 <span class="text-secondary small" id="opMemberFooter">총 0건</span>
+               </div>
+@@ -100,7 +102,7 @@
+                 <table class="table table-vcenter table-sm m-0">
+                   <thead><tr>
+                     <th class="cell-tight"><input class="form-check-input m-0 align-middle check op-check-all" type="checkbox" data-list="opProjectBody" aria-label="전체 선택"></th>
+-                    <th>프로젝트 아이디</th><th>프로젝트 이름</th>
++                    <th class="cell-center">프로젝트 아이디</th><th class="cell-text">프로젝트 이름</th>
+                   </tr></thead>
+                   <tbody id="opProjectBody"></tbody>
+                 </table>

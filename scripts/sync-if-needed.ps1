@@ -39,6 +39,12 @@ if ($toClose.Count -gt 0) {
   else { $c = Gitea close-merged; Write-Host "closed: $((@($c.closed) | ForEach-Object { "#$($_.issue) (PR #$($_.pr))" }) -join ', ')" }
 }
 
+# 1b. agent:waiting issues whose prerequisites ("선행 이슈: #a, #b") are all closed -> agent:todo.
+#     Runs after close-merged so a merge seen this minute can release its dependants in the same pass.
+$promoteResult = if ($DryRun) { Gitea promote-waiting -DryRun } else { Gitea promote-waiting }   # -File can't take -DryRun:$x
+$promoted = @($promoteResult.promoted | Where-Object { $_ })
+foreach ($p in $promoted) { Write-Host "$(if ($DryRun) { 'would promote' } else { 'promoted' }): #$($p.issue) (선행 #$(@($p.deps) -join ', #') 모두 닫힘)" }
+
 # 2. issues handed to the agents with agent:todo — start a run in the background (it can take hours,
 #    so this watcher must not wait for it). Batches run side by side: run-todo.ps1 locks only while it
 #    plans, skips issues already in a running lane, and exits without a model call when nothing is new.

@@ -1,0 +1,113 @@
+diff --git a/src/main/resources/static/assets/app/document/document-editor.css b/src/main/resources/static/assets/app/document/document-editor.css
+index 6191f0f..6208329 100644
+--- a/src/main/resources/static/assets/app/document/document-editor.css
++++ b/src/main/resources/static/assets/app/document/document-editor.css
+@@ -18,3 +18,64 @@
+ #loadTemplateModal .table td:nth-child(3):not([colspan]) { width: 5rem; white-space: nowrap; }
+ #loadTemplateModal .table th:nth-child(4),
+ #loadTemplateModal .table td:nth-child(4):not([colspan]) { width: 8rem; white-space: nowrap; }
++
++/* 목록 5행 고정 높이 + 여백 확대(이슈 #201) — 서식이 1건이어도 모달이 납작해지지 않는다.
++   행 높이를 변수로 두고 머리글 1행 + 본문 5행을 목록 영역의 최소 높이로 삼는다. 5행을 넘으면
++   표 안 스크롤 대신 페이저로 넘긴다(document-editor.js 의 pageSize 도 5로 맞춘다). */
++#loadTemplateModal {
++  --tpl-row-h: 3.125rem;
++}
++#loadTemplateModal .table thead th,
++#loadTemplateModal .table tbody tr:not(:has(td[colspan])) > td {
++  height: var(--tpl-row-h);
++  padding-top: 0;
++  padding-bottom: 0;
++}
++#loadTemplateModal .table-responsive {
++  min-height: calc(var(--tpl-row-h) * 6);
++}
++
++/* 빈 상태 · 로딩 중 · 오류는 colspan 한 줄짜리 행이다 — 5행 영역을 통째로 채워 가운데 두면
++   탭을 바꾸거나 오류가 나도 모달 높이가 출렁이지 않는다.
++   ⚠️ 마크업의 .py-5 가 !important 라 패딩은 못 건드린다 — 높이(14.375rem)가 패딩을 포함하고도
++      넉넉해 그대로 둔다. */
++#loadTemplateModal .table tbody tr:has(td[colspan]) > td {
++  height: calc(var(--tpl-row-h) * 5);
++  vertical-align: middle;
++}
++
++/* 목록 ↔ 페이저, 페이저 ↔ 모달 하단 사이 여백 확대 — 공용 .pager-row 는 다른 모달도 쓰므로
++   이 모달에만 한정한다. */
++#loadTemplateModal .pager-row { margin-top: 1.25rem; }
++#loadTemplateModal .modal-footer { padding-top: 1.25rem; padding-bottom: 1.25rem; }
++
++/* 고른 행 강조 — Tabler 기본 .table-active 팔레트 대신 테마의 선택 행 색을 쓴다.
++   ⚠️ 배경은 tr 이 아니라 --tblr-table-bg-state 로 준다. Tabler 는 셀마다
++      `box-shadow: inset 0 0 0 9999px var(--tblr-table-bg-state, …)` 를 걸어 두므로
++      tr 에 준 background-color 는 그 불투명 inset 그림자에 가려 안 보인다.
++   --gfax-row-selected 는 다크 테마에서 면끼리 대비가 1.0~1.6 수준이라(설계상 은은한 틴트) 그것만으론
++   "분명한" 강조가 안 된다. .list-cards 의 `.list-card.is-picked`(outline 2px var(--tblr-primary))와
++   같은 결로, 선명한 주색 띠를 왼쪽에 더해 표에서도 같은 강도로 보이게 한다.
++   ⚠️ border-left 는 쓰지 않는다 — border-collapse 표에서 테두리 폭만큼 셀이 밀려 열 폭이 흔들린다.
++      대신 첫 칸의 box-shadow 에 주색 inset 한 겹을 추가한다. 이 칸은 셀 전체를 덮는 배경 inset
++      규칙도 함께 받아야 하므로(위 경고), 두 inset 을 한 선언에 같이 써서 셀별 box-shadow 를
++      완전히 대체한다(특이도상 이 선택자가 Tabler 기본 규칙을 이긴다 — 셋 중 하나만 적으면 나머지가
++      사라진다). 레이아웃에 관여하지 않는 box-shadow 라 행을 골라도 열 폭·위치가 바뀌지 않는다. */
++#loadTemplateModal .table tbody tr.table-active {
++  --tblr-table-bg-state: var(--gfax-row-selected);
++}
++#loadTemplateModal .table tbody tr.table-active > td:first-child {
++  box-shadow: inset .1875rem 0 0 var(--tblr-primary), inset 0 0 0 9999px var(--tblr-table-bg-state);
++}
++
++/* [불러오기] 비활성 대비(이슈 #201) — .btn-primary 는 채운 배경에 opacity 로 흐리는데, 다크 테마의
++   밝은 주색(민트·라벤더 등) 위 흰 글자가 겹치면 거의 안 보인다. 표 머리글과 같은 중립 틴트 배경 +
++   보조 글자색 조합(이미 쓰는 대비)으로 바꿔 opacity 에 기대지 않는다.
++   ⚠️ 전역 .btn-primary:disabled 는 development-manual · system-role 에도 쓰여 범위가 넓으므로
++      이 모달의 버튼에만 한정한다. */
++#loadTemplateModal #btnTplLoad:disabled {
++  opacity: 1;
++  background-color: var(--gfax-tint);
++  border-color: var(--gfax-tint);
++  color: var(--gfax-muted);
++}
+diff --git a/src/main/resources/static/assets/app/document/document-editor.js b/src/main/resources/static/assets/app/document/document-editor.js
+index fc99354..3ba9ece 100644
+--- a/src/main/resources/static/assets/app/document/document-editor.js
++++ b/src/main/resources/static/assets/app/document/document-editor.js
+@@ -562,10 +562,12 @@ jQuery(function ($) {
+ 	}
+ 
+ 	function tplEmptyRow() {
++		// 모달 밖(서식함 화면)으로 가는 일반 링크다 — 편집 중 변경사항은 기존 beforeunload 경고가 맡는다
++		// (사이드바 링크처럼 커스텀 모달로 가로채는 대상에는 안 끼워 뒀다. 이슈 #201).
+ 		var href = tplScope === 'PERSONAL' ? '/document/document-form' : '/help/project-form';
+-		var label = tplScope === 'PERSONAL' ? '개인 서식함' : '공용 서식함';
+-		return '<tr><td class="text-center text-secondary py-5" colspan="4">등록된 서식이 없습니다. ' +
+-			'<a href="' + href + '">' + label + '</a>에서 서식을 등록하세요.</td></tr>';
++		var label = tplScope === 'PERSONAL' ? '개인 서식함으로 가기' : '공용 서식함으로 가기';
++		return '<tr><td class="text-center text-secondary py-5" colspan="4">등록된 서식이 없습니다.<br>' +
++			'<a href="' + href + '">' + label + '</a></td></tr>';
+ 	}
+ 
+ 	function tplRowHtml(item) {
+@@ -598,7 +600,8 @@ jQuery(function ($) {
+ 		tplSelectRow(null);
+ 		$tplBody.html('<tr><td class="text-center text-secondary py-5" colspan="4">불러오는 중…</td></tr>');
+ 
+-		var params = { formScope: tplScope, pageIndex: tplPage, pageSize: 10 };
++		// 목록이 5행 고정 높이라 페이지 크기도 5로 맞춘다(표 안 스크롤을 만들지 않는다 — 이슈 #201).
++		var params = { formScope: tplScope, pageIndex: tplPage, pageSize: 5 };
+ 		var name = ($('#tplNameSearch').val() || '').trim();
+ 		if (name) params.formName = name;
+ 
+diff --git a/src/main/resources/templates/app/document/document-editor.html b/src/main/resources/templates/app/document/document-editor.html
+index 8e5bb77..49c0ef0 100644
+--- a/src/main/resources/templates/app/document/document-editor.html
++++ b/src/main/resources/templates/app/document/document-editor.html
+@@ -202,7 +202,8 @@
+     </div>
+ 
+     <!-- 서식 불러오기 모달(이슈 #148) — 개인 서식함 · 공용 서식함(이슈 #147)의 서식을 하나 골라 편집기에 새 문서로 연다.
+-         목록 · 내려받기는 #147 의 서식함 API 를 그대로 쓴다 — 권한(본인 개인 서식 + 소속 프로젝트 공용 서식)은 서버가 막는다. -->
++         목록 · 내려받기는 #147 의 서식함 API 를 그대로 쓴다 — 권한(본인 개인 서식 + 소속 프로젝트 공용 서식)은 서버가 막는다.
++         목록은 5행 고정 높이다(이슈 #201) — 꾸밈은 document-editor.css, 페이지 크기는 document-editor.js 를 본다. -->
+     <div class="modal" id="loadTemplateModal" tabindex="-1" aria-hidden="true">
+       <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable modal-fullscreen-sm-down">
+         <div class="modal-content">

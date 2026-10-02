@@ -1,0 +1,5 @@
+﻿서식 불러오기 모달 목록 5행 고정 높이·여백 확대, 선택 행 띠 강조, 비활성 [불러오기] 대비
+
+Refs #201
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>

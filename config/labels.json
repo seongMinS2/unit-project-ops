@@ -4,6 +4,7 @@
   { "name": "agent:in-progress", "color": "#fbca04", "description": "에이전트가 처리 중" },
   { "name": "agent:pr-open",     "color": "#0e8a16", "description": "에이전트가 PR 생성, 사람 리뷰 대기" },
   { "name": "agent:blocked",     "color": "#b60205", "description": "에이전트가 자동 처리 실패, 사람 판단 필요" },
+  { "name": "agent:waiting",     "color": "#c5def5", "description": "본문의 '선행 이슈: #a, #b' 가 모두 닫히면 자동으로 agent:todo 로 넘어감" },
   { "name": "severity/critical", "color": "#b60205", "description": "보안 사고·데이터 손상 가능" },
   { "name": "severity/high",     "color": "#d93f0b", "description": "기능 오류 가능성 높음" },
   { "name": "severity/medium",   "color": "#fbca04", "description": "잠재 버그·유지보수 부담" },
